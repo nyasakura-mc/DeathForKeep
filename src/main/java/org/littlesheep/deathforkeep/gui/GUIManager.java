@@ -44,16 +44,14 @@ public class GUIManager implements Listener {
     
     public void openMainMenu(Player player) {
         Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 27, 
+        Inventory inventory = Bukkit.createInventory(null, 36, 
                 ChatColor.translateAlternateColorCodes('&', 
                 parsePlaceholders(player, messages.getMessage("gui.main.title"))));
         
         // 购买保护按钮
         ItemStack buyItem = createItem(player, Material.EMERALD, 
                 messages.getMessage("gui.main.buy"), 
-                Arrays.asList(messages.getMessage("gui.main.buy-lore")
-                        .replace("%price%", String.valueOf(plugin.getConfig().getDouble("prices.1d")))
-                        .split("\n")));
+                Arrays.asList(messages.getMessage("gui.main.buy-lore").split("\n")));
         inventory.setItem(11, buyItem);
         
         // 粒子效果按钮
@@ -72,6 +70,14 @@ public class GUIManager implements Listener {
                 messages.getMessage("gui.main.help"), 
                 Arrays.asList(messages.getMessage("gui.main.help-lore").split("\n")));
         inventory.setItem(15, helpItem);
+        
+        // 管理员按钮 (仅对有权限的玩家显示)
+        if (player.hasPermission("deathkeep.admin")) {
+            ItemStack adminItem = createItem(player, Material.COMMAND_BLOCK, 
+                    messages.getMessage("gui.main.admin"), 
+                    Arrays.asList(messages.getMessage("gui.main.admin-lore").split("\n")));
+            inventory.setItem(31, adminItem);
+        }
         
         player.openInventory(inventory);
         openInventories.put(player.getUniqueId(), GUIType.MAIN_MENU);
@@ -124,25 +130,26 @@ public class GUIManager implements Listener {
     public void openAdminMenu(Player player) {
         Messages messages = plugin.getMessages();
         Inventory inventory = Bukkit.createInventory(null, 27, 
-                ChatColor.translateAlternateColorCodes('&', messages.getMessage("gui.admin-menu.title")));
+                ChatColor.translateAlternateColorCodes('&', 
+                messages.getMessage("gui.admin-menu.title")));
         
         // 玩家列表按钮
-        ItemStack playerListItem = createItem(player, Material.PLAYER_HEAD, 
+        ItemStack listItem = createItem(player, Material.PLAYER_HEAD, 
                 messages.getMessage("gui.admin-menu.player-list"), 
                 Arrays.asList(messages.getMessage("gui.admin-menu.player-list-lore").split("\n")));
-        inventory.setItem(11, playerListItem);
+        inventory.setItem(11, listItem);
         
         // 批量操作按钮
-        ItemStack batchActionsItem = createItem(player, Material.COMMAND_BLOCK, 
+        ItemStack batchItem = createItem(player, Material.CHEST, 
                 messages.getMessage("gui.admin-menu.batch-actions"), 
                 Arrays.asList(messages.getMessage("gui.admin-menu.batch-actions-lore").split("\n")));
-        inventory.setItem(13, batchActionsItem);
+        inventory.setItem(13, batchItem);
         
-        // 重置所有数据按钮
-        ItemStack resetAllItem = createItem(player, Material.TNT, 
+        // 重置数据按钮
+        ItemStack resetItem = createItem(player, Material.BARRIER, 
                 messages.getMessage("gui.admin-menu.reset-all"), 
                 Arrays.asList(messages.getMessage("gui.admin-menu.reset-all-lore").split("\n")));
-        inventory.setItem(15, resetAllItem);
+        inventory.setItem(15, resetItem);
         
         // 返回按钮
         ItemStack backItem = createItem(player, Material.BARRIER, 
@@ -370,6 +377,12 @@ public class GUIManager implements Listener {
             case 15: // 帮助
                 player.closeInventory();
                 player.performCommand("deathkeep help");
+                break;
+                
+            case 31: // 管理员面板
+                if (player.hasPermission("deathkeep.admin")) {
+                    openAdminMenu(player);
+                }
                 break;
         }
     }

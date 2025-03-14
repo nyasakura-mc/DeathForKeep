@@ -144,10 +144,10 @@ gui:
     buy-lore: |
       &7点击进入购买界面
       &7基础价格: &e%price% &7金币/天
-    particles: "&b粒子效果"
+    particles: "&e粒子效果"
     particles-lore: |
       &7当前状态: %status%
-      &7点击切换
+      &7点击切换粒子效果
     help: "&e帮助信息"
     help-lore: |
       &7点击查看帮助
@@ -164,7 +164,9 @@ gui:
       &7手续费: &e%fee%% &7的保护价值
       &7点击选择玩家
     admin: "&c管理员面板"
-    admin-lore: "&7管理所有玩家的保护"
+    admin-lore: |
+      &7管理所有玩家的保护
+      &7点击打开管理面板
     settings: "&e设置"
     settings-lore: "&7调整个人设置"
 
