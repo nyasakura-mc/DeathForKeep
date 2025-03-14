@@ -13,13 +13,11 @@ import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.utils.Messages;
 import org.bukkit.ChatColor;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DeathKeepCommand implements CommandExecutor, TabCompleter {
 
     private final DeathForKeep plugin;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private final Map<UUID, Long> resetConfirmations = new HashMap<>();
 
     public DeathKeepCommand(DeathForKeep plugin) {
@@ -301,59 +299,75 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
     private boolean handleCheck(CommandSender sender, String[] args) {
         Messages messages = plugin.getMessages();
         
-        if (args.length > 1 && sender.hasPermission("deathkeep.check.others")) {
-            Player target = Bukkit.getPlayer(args[1]);
-            if (target == null) {
-                sender.sendMessage(messages.getMessage("command.player-not-found", "player", args[1]));
-                return true;
-            }
-            checkProtection(sender, target.getUniqueId(), target.getName());
-        } else if (sender instanceof Player) {
-            Player player = (Player) sender;
-            if (!player.hasPermission("deathkeep.check")) {
-                player.sendMessage(messages.getMessageWithPrefix("command.no-permission"));
-                return true;
-            }
-            checkProtection(sender, player.getUniqueId(), player.getName());
-        } else {
-            sender.sendMessage(messages.getMessage("command.check.specify-player"));
-        }
-        return true;
-    }
-
-    private void checkProtection(CommandSender sender, UUID playerUUID, String playerName) {
-        Messages messages = plugin.getMessages();
-        Map<UUID, PlayerData> playerDataMap = plugin.getPlayerDataMap();
+        // 默认检查自己
+        UUID uuid;
+        String playerName;
         
-        if (playerDataMap.containsKey(playerUUID)) {
-            PlayerData data = playerDataMap.get(playerUUID);
-            long expiryTime = data.getExpiryTime();
-            long currentTime = System.currentTimeMillis() / 1000;
+        if (args.length > 1) {
+            // 检查其他玩家
+            String name = args[1];
+            Player target = Bukkit.getPlayer(name);
             
-            if (expiryTime > currentTime) {
-                Date date = new Date(expiryTime * 1000);
-                sender.sendMessage(messages.getMessage("command.check.active", 
-                        "player", playerName,
-                        "time", dateFormat.format(date)));
-                
-                // 显示粒子效果状态
-                String particlesStatus = data.isParticlesEnabled() ? 
-                        messages.getMessage("command.check.particles-enabled") : 
-                        messages.getMessage("command.check.particles-disabled");
-                sender.sendMessage(particlesStatus);
-                
-                // 显示共享状态
-                if (data.getSharedWith() != null) {
-                    String sharedName = Bukkit.getOfflinePlayer(data.getSharedWith()).getName();
-                    if (sharedName != null) {
-                        sender.sendMessage(messages.getMessage("command.check.shared-with", "player", sharedName));
-                    }
-                }
+            if (target != null) {
+                uuid = target.getUniqueId();
+                playerName = target.getName();
             } else {
-                sender.sendMessage(messages.getMessage("command.check.expired", "player", playerName));
+                @SuppressWarnings("deprecation")
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+                
+                if (offlinePlayer.hasPlayedBefore()) {
+                    uuid = offlinePlayer.getUniqueId();
+                    playerName = offlinePlayer.getName();
+                } else {
+                    sender.sendMessage(messages.getMessage("command.player-not-found", "player", name));
+                    return true;
+                }
             }
+        } else if (sender instanceof Player) {
+            // 检查自己
+            Player player = (Player) sender;
+            uuid = player.getUniqueId();
+            playerName = player.getName();
         } else {
-            sender.sendMessage(messages.getMessage("command.check.no-protection", "player", playerName));
+            sender.sendMessage(messages.getMessage("command.console-specify-player"));
+            return true;
+        }
+        
+        // 检查直接拥有的保护
+        PlayerData data = plugin.getPlayerData(uuid);
+        boolean hasDirectProtection = data != null && data.isActive();
+        
+        // 检查共享获得的保护
+        boolean hasSharedProtection = false;
+        String sharerName = "";
+        
+        for (Map.Entry<UUID, PlayerData> entry : plugin.getPlayerDataMap().entrySet()) {
+            PlayerData sharerData = entry.getValue();
+            if (sharerData.isActive() && uuid.equals(sharerData.getSharedWith())) {
+                hasSharedProtection = true;
+                // 获取分享者的名字
+                OfflinePlayer sharerPlayer = Bukkit.getOfflinePlayer(entry.getKey());
+                sharerName = sharerPlayer.getName() != null ? sharerPlayer.getName() : "未知玩家";
+                break;
+            }
+        }
+        
+        if (hasDirectProtection) {
+            @SuppressWarnings("null")
+            long timeLeft = data.getExpiryTime() - System.currentTimeMillis() / 1000;
+            sender.sendMessage(messages.getMessage("command.check.has-protection", 
+                    "player", playerName, 
+                    "time", formatTime((int)timeLeft)));
+            return true;
+        } else if (hasSharedProtection) {
+            sender.sendMessage(messages.getMessage("command.check.has-shared-protection", 
+                    "player", playerName, 
+                    "sharer", sharerName));
+            return true;
+        } else {
+            sender.sendMessage(messages.getMessage("command.check.no-protection", 
+                    "player", playerName));
+            return true;
         }
     }
 
@@ -663,5 +677,67 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
         }
         
         return completions;
+    }
+
+    // 添加格式化时间的方法
+    private String formatTime(int seconds) {
+        if (seconds < 60) {
+            return seconds + "秒";
+        }
+        
+        long minutes = seconds / 60;
+        if (minutes < 60) {
+            return minutes + "分钟";
+        }
+        
+        long hours = minutes / 60;
+        if (hours < 24) {
+            return hours + "小时";
+        }
+        
+        long days = hours / 24;
+        hours = hours % 24;
+        
+        if (hours == 0) {
+            return days + "天";
+        } else {
+            return days + "天" + hours + "小时";
+        }
+    }
+
+    private void checkProtection(CommandSender sender, UUID uuid, String playerName) {
+        PlayerData data = plugin.getPlayerData(uuid);
+        Messages messages = plugin.getMessages();
+        
+        boolean hasDirectProtection = data != null && data.isActive();
+        
+        // 检查共享获得的保护
+        boolean hasSharedProtection = false;
+        String sharerName = "";
+        
+        for (Map.Entry<UUID, PlayerData> entry : plugin.getPlayerDataMap().entrySet()) {
+            PlayerData sharerData = entry.getValue();
+            if (sharerData.isActive() && uuid.equals(sharerData.getSharedWith())) {
+                hasSharedProtection = true;
+                OfflinePlayer sharerPlayer = Bukkit.getOfflinePlayer(entry.getKey());
+                sharerName = sharerPlayer.getName() != null ? sharerPlayer.getName() : "未知玩家";
+                break;
+            }
+        }
+        
+        if (hasDirectProtection) {
+            @SuppressWarnings("null")
+            long timeLeft = data.getExpiryTime() - System.currentTimeMillis() / 1000;
+            sender.sendMessage(messages.getMessage("command.check.has-protection", 
+                    "player", playerName, 
+                    "time", formatTime((int)timeLeft)));
+        } else if (hasSharedProtection) {
+            sender.sendMessage(messages.getMessage("command.check.has-shared-protection", 
+                    "player", playerName, 
+                    "sharer", sharerName));
+        } else {
+            sender.sendMessage(messages.getMessage("command.check.no-protection", 
+                    "player", playerName));
+        }
     }
 } 

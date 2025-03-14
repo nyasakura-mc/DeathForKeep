@@ -37,6 +37,8 @@ command:
     particles-disabled: "&c粒子效果已禁用。"
     shared-with: "&a保护已与 %player% 共享。"
     shared-from: "&a你正在使用来自 %player% 的共享保护。"
+    has-protection: "&a玩家 %player% 当前有死亡保护，剩余时间: %time%"
+    has-shared-protection: "&a玩家 %player% 当前有来自 %sharer% 分享的死亡保护"
 
   add:
     usage: "&c用法: /deathkeep add <玩家> <时间>"
@@ -65,7 +67,7 @@ command:
     self: "&c你不能与自己共享保护！"
     no-protection: "&c你没有有效的保护可以共享！"
     already-shared: "&c你已经在与 %player% 共享你的保护！"
-    success: "&a你现在正在与 %player% 共享你的保护！"
+    success: "&a成功与 %player% 分享了您的死亡保护"
     notify: "&a%player% 现在正在与你共享他们的死亡物品保护！"
     request-sent: "&a已向 %player% 发送共享请求，手续费: %fee% 金币。"
     request-received: "&a%player% 想要与你共享他们的死亡物品保护。请选择是否接受。"
@@ -85,6 +87,9 @@ command:
     confirm-deny: "&c拒绝"
     success-target: "&a你现在正在接收来自 %player% 的死亡物品保护！"
     fee-info: "&7共享手续费: &e%fee% &7金币 (%percentage%%)"
+    received: "&a%player% 已与您分享了死亡保护"
+    rejected: "&c%player% 拒绝了您的保护分享请求"
+    player-offline: "&c目标玩家不在线"
 
   find:
     usage: "&c用法: /deathkeep find <玩家>"
@@ -277,6 +282,27 @@ gui:
     previous-page: "&e上一页"
     next-page: "&e下一页"
     click-to-toggle: "&7点击切换"
+
+  player-details:
+    title: "&6玩家详情: %player%"
+    status: "&f保护状态"
+    status-lore: |
+      &7当前状态: %status%
+      &7剩余时间: %time%
+    add-protection: "&a添加保护"
+    add-protection-lore: |
+      &7为该玩家添加保护时长
+      &7点击后在聊天框输入天数
+    remove-protection: "&c移除保护"
+    remove-protection-lore: |
+      &7为该玩家减少保护时长
+      &7点击后在聊天框输入天数
+    share-protection: "&e分享保护"
+    share-protection-lore: |
+      &7与该玩家分享您的保护
+      &7对方需要确认接受
+    enter-days-add: "&e请在聊天框中输入要添加的天数，或输入'取消'终止操作"
+    enter-days-remove: "&e请在聊天框中输入要减少的天数，或输入'取消'终止操作"
 
 placeholder:
   time: "%time%"

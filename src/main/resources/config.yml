@@ -19,6 +19,14 @@ particles:
   type: TOTEM  # 粒子类型: TOTEM, HEART, FLAME, PORTAL, EXPLOSION_NORMAL
   count: 50    # 粒子数量
   share-effect: true  # 共享成功时是否显示粒子效果
+  on-protection-used: true
+  status-change: true
+  gain-protection: "TOTEM"
+  lose-protection: "SMOKE_NORMAL"
+  offset-x: 0.5
+  offset-y: 1.0
+  offset-z: 0.5
+  speed: 0.1
 
 # BossBar 设置
 bossbar:

@@ -12,6 +12,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.utils.Messages;
@@ -19,6 +20,8 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.Particle;
 
 public class GUIManager implements Listener {
     
@@ -37,7 +40,8 @@ public class GUIManager implements Listener {
         DURATION_MENU,
         ADMIN_MENU,
         ADMIN_PLAYER_LIST,
-        ADMIN_BATCH_ACTIONS
+        ADMIN_BATCH_ACTIONS,
+        PLAYER_DETAILS
     }
     
     public GUIManager(DeathForKeep plugin) {
@@ -425,6 +429,9 @@ public class GUIManager implements Listener {
             case ADMIN_BATCH_ACTIONS:
                 handleBatchActionsClick(player, slot);
                 break;
+            case PLAYER_DETAILS:
+                handlePlayerDetailsClick(player, slot);
+                break;
         }
     }
     
@@ -499,9 +506,8 @@ public class GUIManager implements Listener {
                 Map.Entry<UUID, PlayerData> entry = entries.get(startIndex + slot);
                 UUID targetUUID = entry.getKey();
                 
-                // 打开玩家管理菜单或执行操作
-                player.closeInventory();
-                player.performCommand("deathkeep check " + Bukkit.getOfflinePlayer(targetUUID).getName());
+                // 打开玩家详情菜单
+                openPlayerDetailsMenu(player, targetUUID);
             }
         } else if (slot == 45) {
             // 上一页
@@ -595,12 +601,27 @@ public class GUIManager implements Listener {
     }
     
     private void toggleParticles(Player player) {
-        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        PlayerData playerData = plugin.getPlayerData(uuid);
+        
+        if (playerData == null) {
+            // 如果玩家数据不存在，创建新的数据
+            long currentTime = System.currentTimeMillis() / 1000;
+            playerData = new PlayerData(uuid, currentTime, false, null); // 默认设置粒子效果为关闭
+            plugin.getPlayerDataMap().put(uuid, playerData);
+        }
+        
+        // 切换粒子效果状态
         boolean newState = !playerData.isParticlesEnabled();
         playerData.setParticlesEnabled(newState);
         
+        // 保存到数据库
+        plugin.getDatabaseManager().updateParticlesEnabled(uuid, newState);
+        
+        // 发送消息
         Messages messages = plugin.getMessages();
-        player.sendMessage(messages.getMessage("command.particles." + (newState ? "enabled" : "disabled")));
+        player.sendMessage(messages.getMessage(newState ? 
+                "command.particles.enabled" : "command.particles.disabled"));
     }
     
     private void confirmPurchase(Player player, int days) {
@@ -666,6 +687,227 @@ public class GUIManager implements Listener {
             return days + "天";
         } else {
             return days + "天" + hours + "小时";
+        }
+    }
+
+    // 分享保护功能需要确认步骤
+    private void shareProtection(Player player, UUID targetUUID) {
+        Player targetPlayer = Bukkit.getPlayer(targetUUID);
+        
+        if (targetPlayer == null) {
+            player.sendMessage(plugin.getMessages().getMessage("command.share.player-offline"));
+            return;
+        }
+        
+        // 使用确认GUI让目标玩家确认是否接受分享
+        new ConfirmGUI(plugin, 
+                plugin.getMessages().getMessage("gui.share.title"),
+                plugin.getMessages().getMessage("gui.share.accept"),
+                plugin.getMessages().getMessage("gui.share.deny"),
+                () -> {
+                    // 接受分享的处理
+                    PlayerData senderData = plugin.getPlayerData(player.getUniqueId());
+                    if (senderData != null && senderData.isActive()) {
+                        senderData.setSharedWith(targetUUID);
+                        plugin.getDatabaseManager().updateSharedWith(player.getUniqueId(), targetUUID);
+                        player.sendMessage(plugin.getMessages().getMessage("command.share.success", "player", targetPlayer.getName()));
+                        targetPlayer.sendMessage(plugin.getMessages().getMessage("command.share.received", "player", player.getName()));
+                        
+                        // 为接收者添加粒子效果
+                        showProtectionEffects(targetPlayer, true);
+                    } else {
+                        player.sendMessage(plugin.getMessages().getMessage("command.share.no-protection"));
+                    }
+                },
+                () -> {
+                    // 拒绝分享的处理
+                    player.sendMessage(plugin.getMessages().getMessage("command.share.rejected", "player", targetPlayer.getName()));
+                }).open(targetPlayer);
+    }
+
+    // 显示获得或失去保护时的粒子效果
+    public void showProtectionEffects(Player player, boolean gained) {
+        if (plugin.getConfig().getBoolean("particles.status-change", true)) {
+            String particleType = gained ? 
+                    plugin.getConfig().getString("particles.gain-protection", "TOTEM") : 
+                    plugin.getConfig().getString("particles.lose-protection", "SMOKE_NORMAL");
+            
+            int count = plugin.getConfig().getInt("particles.count", 50);
+            double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.5);
+            double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.0);
+            double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.5);
+            double speed = plugin.getConfig().getDouble("particles.speed", 0.1);
+            
+            try {
+                Particle particle = Particle.valueOf(particleType);
+                player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), 
+                        count, offsetX, offsetY, offsetZ, speed);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("无效的粒子类型: " + particleType);
+                player.getWorld().spawnParticle(Particle.TOTEM, player.getLocation().add(0, 1, 0), 
+                        count, offsetX, offsetY, offsetZ, speed);
+            }
+        }
+    }
+
+    // 添加一个处理分享按钮点击的方法
+    public void handlePlayerShare(Player player, UUID targetUUID) {
+        shareProtection(player, targetUUID);
+    }
+
+    // 添加打开玩家详情菜单的方法
+    public void openPlayerDetailsMenu(Player admin, UUID targetUUID) {
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetUUID);
+        String targetName = target.getName() != null ? target.getName() : "未知玩家";
+        
+        Messages messages = plugin.getMessages();
+        Inventory inventory = Bukkit.createInventory(null, 36, 
+                ChatColor.translateAlternateColorCodes('&', 
+                messages.getMessage("gui.player-details.title").replace("%player%", targetName)));
+        
+        // 玩家头像
+        ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
+        if (target.isOnline()) {
+            SkullMeta meta = (SkullMeta) playerHead.getItemMeta();
+            meta.setOwningPlayer(target);
+            meta.setDisplayName(ChatColor.YELLOW + targetName);
+            playerHead.setItemMeta(meta);
+        }
+        inventory.setItem(4, playerHead);
+        
+        // 玩家保护状态
+        PlayerData data = plugin.getPlayerData(targetUUID);
+        boolean hasProtection = data != null && data.isActive();
+        String timeLeft = "";
+        
+        if (hasProtection) {
+            long currentTime = System.currentTimeMillis() / 1000;
+            @SuppressWarnings("null")
+            long expiryTime = data.getExpiryTime();
+            long secondsLeft = expiryTime - currentTime;
+            
+            if (secondsLeft > 0) {
+                timeLeft = formatTime(secondsLeft);
+            } else {
+                timeLeft = messages.getMessage("gui.main.status-expired");
+            }
+        }
+        
+        Material statusMaterial = hasProtection ? Material.TOTEM_OF_UNDYING : Material.BARRIER;
+        String statusTitle = messages.getMessage("gui.player-details.status");
+        List<String> statusLore = Arrays.asList(
+                messages.getMessage("gui.player-details.status-lore")
+                        .replace("%status%", hasProtection ? 
+                                messages.getMessage("gui.main.status-active") : 
+                                messages.getMessage("gui.main.status-inactive"))
+                        .replace("%time%", timeLeft)
+                        .split("\n"));
+        
+        ItemStack statusItem = createItem(admin, statusMaterial, statusTitle, statusLore);
+        inventory.setItem(13, statusItem);
+        
+        // 添加保护按钮 (仅管理员)
+        if (admin.hasPermission("deathkeep.admin")) {
+            ItemStack addItem = createItem(admin, Material.EMERALD, 
+                    messages.getMessage("gui.player-details.add-protection"), 
+                    Arrays.asList(messages.getMessage("gui.player-details.add-protection-lore").split("\n")));
+            inventory.setItem(11, addItem);
+            
+            // 移除保护按钮
+            ItemStack removeItem = createItem(admin, Material.REDSTONE, 
+                    messages.getMessage("gui.player-details.remove-protection"), 
+                    Arrays.asList(messages.getMessage("gui.player-details.remove-protection-lore").split("\n")));
+            inventory.setItem(12, removeItem);
+        }
+        
+        // 分享保护按钮 (仅当自己查看自己或管理员查看非自己时显示)
+        if (admin.getUniqueId().equals(targetUUID) || 
+                (admin.hasPermission("deathkeep.admin") && !admin.getUniqueId().equals(targetUUID))) {
+            if (target.isOnline()) {
+                ItemStack shareItem = createItem(admin, Material.GOLD_INGOT, 
+                        messages.getMessage("gui.player-details.share-protection"), 
+                        Arrays.asList(messages.getMessage("gui.player-details.share-protection-lore").split("\n")));
+                inventory.setItem(15, shareItem);
+            }
+        }
+        
+        // 返回按钮
+        ItemStack backItem = createItem(admin, Material.BARRIER, 
+                messages.getMessage("gui.common.back"), 
+                Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
+        inventory.setItem(31, backItem);
+        
+        // 存储目标玩家UUID到元数据，以便点击处理
+        admin.setMetadata("dk_share_target", new FixedMetadataValue(plugin, targetUUID));
+        
+        admin.openInventory(inventory);
+        openInventories.put(admin.getUniqueId(), GUIType.PLAYER_DETAILS);
+    }
+
+    // 实现handlePlayerDetailsClick方法
+    private void handlePlayerDetailsClick(Player player, int slot) {
+        if (!player.hasMetadata("dk_share_target")) {
+            player.closeInventory();
+            return;
+        }
+        
+        UUID targetUUID = null;
+        List<MetadataValue> values = player.getMetadata("dk_share_target");
+        if (!values.isEmpty()) {
+            Object value = values.get(0).value();
+            if (value instanceof UUID) {
+                targetUUID = (UUID) value;
+            } else if (value instanceof String) {
+                try {
+                    targetUUID = UUID.fromString((String) value);
+                } catch (IllegalArgumentException e) {
+                    player.closeInventory();
+                    return;
+                }
+            }
+        }
+        
+        if (targetUUID == null) {
+            player.closeInventory();
+            return;
+        }
+        
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetUUID);
+        
+        switch (slot) {
+            case 11: // 添加保护 (仅管理员)
+                if (player.hasPermission("deathkeep.admin")) {
+                    player.closeInventory();
+                    player.setMetadata("dk_admin_add_target", new FixedMetadataValue(plugin, targetUUID.toString()));
+                    player.sendMessage(plugin.getMessages().getMessage("gui.player-details.enter-days-add"));
+                }
+                break;
+                
+            case 12: // 移除保护 (仅管理员)
+                if (player.hasPermission("deathkeep.admin")) {
+                    player.closeInventory();
+                    player.setMetadata("dk_admin_remove_target", new FixedMetadataValue(plugin, targetUUID.toString()));
+                    player.sendMessage(plugin.getMessages().getMessage("gui.player-details.enter-days-remove"));
+                }
+                break;
+                
+            case 15: // 分享保护
+                if (target.isOnline()) {
+                    shareProtection(player, targetUUID);
+                } else {
+                    player.sendMessage(plugin.getMessages().getMessage("command.share.player-offline"));
+                }
+                break;
+                
+            case 31: // 返回
+                // 如果是从玩家列表打开的，返回玩家列表
+                if (player.hasPermission("deathkeep.admin")) {
+                    openPlayerListMenu(player, adminPageMap.getOrDefault(player.getUniqueId(), 0));
+                } else {
+                    // 否则返回主菜单
+                    openMainMenu(player);
+                }
+                break;
         }
     }
 } 

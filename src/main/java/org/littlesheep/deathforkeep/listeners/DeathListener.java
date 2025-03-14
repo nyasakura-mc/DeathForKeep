@@ -39,8 +39,8 @@ public class DeathListener implements Listener {
             player.sendMessage(messages.getMessage("death.protected"));
             
             // 播放粒子效果
-            if (plugin.areParticlesEnabled(playerUUID)) {
-                playDeathParticles(player.getLocation());
+            if (plugin.getConfig().getBoolean("particles.on-protection-used", true)) {
+                spawnProtectionParticles(player.getLocation());
             }
             
             // 广播消息
@@ -48,7 +48,7 @@ public class DeathListener implements Listener {
         }
     }
     
-    private void playDeathParticles(Location location) {
+    private void spawnProtectionParticles(Location location) {
         String particleType = plugin.getConfig().getString("particles.type", "TOTEM");
         int count = plugin.getConfig().getInt("particles.count", 50);
         double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.5);
