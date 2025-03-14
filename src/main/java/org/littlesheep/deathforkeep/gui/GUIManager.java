@@ -102,13 +102,13 @@ public class GUIManager implements Listener {
             Messages messages = plugin.getMessages();
             Inventory inventory = Bukkit.createInventory(null, 27, 
                     ChatColor.translateAlternateColorCodes('&', 
-                    messages.getMessage("gui.duration.title")));
+                    messages.getMessage("gui.buy.title")));
             
             // 1天选项
             double price1d = plugin.getConfig().getDouble("prices.1d");
             ItemStack item1d = createItem(player, Material.CLOCK, 
-                    messages.getMessage("gui.duration.one-day"), 
-                    Arrays.asList(messages.getMessage("gui.duration.one-day-lore")
+                    messages.getMessage("gui.buy.one-day"), 
+                    Arrays.asList(messages.getMessage("gui.buy.one-day-lore")
                             .replace("%price%", String.format("%.2f", price1d))
                             .split("\n")));
             inventory.setItem(11, item1d);
@@ -116,8 +116,8 @@ public class GUIManager implements Listener {
             // 7天选项
             double price7d = plugin.getConfig().getDouble("prices.7d");
             ItemStack item7d = createItem(player, Material.SUNFLOWER, 
-                    messages.getMessage("gui.duration.seven-days"), 
-                    Arrays.asList(messages.getMessage("gui.duration.seven-days-lore")
+                    messages.getMessage("gui.buy.seven-days"), 
+                    Arrays.asList(messages.getMessage("gui.buy.seven-days-lore")
                             .replace("%price%", String.format("%.2f", price7d))
                             .split("\n")));
             inventory.setItem(13, item7d);
@@ -125,8 +125,8 @@ public class GUIManager implements Listener {
             // 30天选项
             double price30d = plugin.getConfig().getDouble("prices.30d");
             ItemStack item30d = createItem(player, Material.EMERALD, 
-                    messages.getMessage("gui.duration.thirty-days"), 
-                    Arrays.asList(messages.getMessage("gui.duration.thirty-days-lore")
+                    messages.getMessage("gui.buy.thirty-days"), 
+                    Arrays.asList(messages.getMessage("gui.buy.thirty-days-lore")
                             .replace("%price%", String.format("%.2f", price30d))
                             .split("\n")));
             inventory.setItem(15, item30d);
