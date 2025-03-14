@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -43,6 +44,9 @@ public class GUIManager implements Listener {
     }
     
     public void openMainMenu(Player player) {
+        // 确保移除之前的状态
+        openInventories.remove(player.getUniqueId());
+        
         Messages messages = plugin.getMessages();
         Inventory inventory = Bukkit.createInventory(null, 27, 
                 ChatColor.translateAlternateColorCodes('&', 
@@ -80,10 +84,17 @@ public class GUIManager implements Listener {
         }
         
         player.openInventory(inventory);
+        // 在打开后设置状态
         openInventories.put(player.getUniqueId(), GUIType.MAIN_MENU);
+        
+        // 调试日志
+        plugin.getLogger().info("为玩家 " + player.getName() + " 打开主菜单，GUI类型已设置为: " + GUIType.MAIN_MENU);
     }
     
     public void openDurationMenu(Player player) {
+        // 确保移除之前的状态
+        openInventories.remove(player.getUniqueId());
+        
         Messages messages = plugin.getMessages();
         Inventory inventory = Bukkit.createInventory(null, 27, 
                 ChatColor.translateAlternateColorCodes('&', 
@@ -123,7 +134,11 @@ public class GUIManager implements Listener {
         inventory.setItem(22, backItem);
         
         player.openInventory(inventory);
+        // 在打开后设置状态
         openInventories.put(player.getUniqueId(), GUIType.DURATION_MENU);
+        
+        // 调试日志
+        plugin.getLogger().info("为玩家 " + player.getName() + " 打开时长选择菜单，GUI类型已设置为: " + GUIType.DURATION_MENU);
     }
     
     public void openAdminMenu(Player player) {
@@ -318,40 +333,39 @@ public class GUIManager implements Listener {
         openInventories.put(player.getUniqueId(), GUIType.ADMIN_BATCH_ACTIONS);
     }
     
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         
         Player player = (Player) event.getWhoClicked();
         UUID playerUUID = player.getUniqueId();
         
-        if (!openInventories.containsKey(playerUUID)) return;
+        if (!openInventories.containsKey(playerUUID)) {
+            return;
+        }
         
         event.setCancelled(true);
-        if (event.getRawSlot() < 0) return; // 防止点击界面外
+        if (event.getRawSlot() < 0) return;
         
         GUIType guiType = openInventories.get(playerUUID);
         int slot = event.getRawSlot();
         
+        // 调试日志
+        plugin.getLogger().info("玩家 " + player.getName() + " 点击了GUI，类型: " + guiType + "，槽位: " + slot);
+        
         // 确保点击的是有效槽位
         if (slot >= event.getInventory().getSize()) return;
         
-        switch (guiType) {
-            case MAIN_MENU:
-                handleMainMenuClick(player, slot);
-                break;
-            case DURATION_MENU:
-                handleDurationMenuClick(player, slot);
-                break;
-            case ADMIN_MENU:
-                handleAdminMenuClick(player, slot);
-                break;
-            case ADMIN_PLAYER_LIST:
-                handlePlayerListClick(player, slot);
-                break;
-            case ADMIN_BATCH_ACTIONS:
-                handleBatchActionsClick(player, slot);
-                break;
+        if (guiType == GUIType.MAIN_MENU) {
+            handleMainMenuClick(player, slot);
+        } else if (guiType == GUIType.DURATION_MENU) {
+            handleDurationMenuClick(player, slot);
+        } else if (guiType == GUIType.ADMIN_MENU) {
+            handleAdminMenuClick(player, slot);
+        } else if (guiType == GUIType.ADMIN_PLAYER_LIST) {
+            handlePlayerListClick(player, slot);
+        } else if (guiType == GUIType.ADMIN_BATCH_ACTIONS) {
+            handleBatchActionsClick(player, slot);
         }
     }
     
@@ -363,7 +377,10 @@ public class GUIManager implements Listener {
     }
     
     private void handleMainMenuClick(Player player, int slot) {
+        plugin.getLogger().info("处理主菜单点击事件，槽位: " + slot);
+        
         if (slot == 11) { // 购买保护
+            plugin.getLogger().info("玩家点击了购买保护按钮，打开时长选择菜单");
             openDurationMenu(player);
         } else if (slot == 13) { // 粒子效果
             toggleParticles(player);
@@ -377,6 +394,8 @@ public class GUIManager implements Listener {
     }
     
     private void handleDurationMenuClick(Player player, int slot) {
+        plugin.getLogger().info("处理时长选择菜单点击事件，槽位: " + slot);
+        
         if (slot == 11) { // 1天
             confirmPurchase(player, 1);
         } else if (slot == 13) { // 7天
