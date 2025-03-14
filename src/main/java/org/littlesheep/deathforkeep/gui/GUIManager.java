@@ -44,36 +44,28 @@ public class GUIManager implements Listener {
     
     public void openMainMenu(Player player) {
         Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 36, 
+        Inventory inventory = Bukkit.createInventory(null, 27, 
                 ChatColor.translateAlternateColorCodes('&', 
                 parsePlaceholders(player, messages.getMessage("gui.main.title"))));
         
-        // 状态按钮
-        List<String> statusLore = new ArrayList<>();
-        String statusLoreText = messages.getMessage("gui.main.status-lore")
-                .replace("%status%", "%deathkeep_status%")
-                .replace("%time%", "%deathkeep_time%")
-                .replace("%particles%", "%deathkeep_particles%")
-                .replace("%share_status%", "%deathkeep_share_status%");
-                
-        for (String line : statusLoreText.split("\n")) {
-            statusLore.add(parsePlaceholders(player, line));
-        }
-        
-        ItemStack statusItem = createItem(player, Material.COMPASS, 
-                messages.getMessage("gui.main.status"), 
-                statusLore);
-        inventory.setItem(11, statusItem);
-        
-        // 购买按钮
-        double price = plugin.getConfig().getDouble("prices.1d");
-        String formattedPrice = formatPrice(price);
+        // 购买保护按钮
         ItemStack buyItem = createItem(player, Material.EMERALD, 
                 messages.getMessage("gui.main.buy"), 
                 Arrays.asList(messages.getMessage("gui.main.buy-lore")
-                        .replace("%price%", formattedPrice)
+                        .replace("%price%", String.valueOf(plugin.getConfig().getDouble("prices.1d")))
                         .split("\n")));
-        inventory.setItem(13, buyItem);
+        inventory.setItem(11, buyItem);
+        
+        // 粒子效果按钮
+        boolean particlesEnabled = plugin.getPlayerData(player.getUniqueId()).isParticlesEnabled();
+        ItemStack particlesItem = createItem(player, Material.BLAZE_POWDER, 
+                messages.getMessage("gui.main.particles"), 
+                Arrays.asList(messages.getMessage("gui.main.particles-lore")
+                        .replace("%status%", particlesEnabled ? 
+                                messages.getMessage("gui.common.enabled") : 
+                                messages.getMessage("gui.common.disabled"))
+                        .split("\n")));
+        inventory.setItem(13, particlesItem);
         
         // 帮助按钮
         ItemStack helpItem = createItem(player, Material.BOOK, 
@@ -81,56 +73,49 @@ public class GUIManager implements Listener {
                 Arrays.asList(messages.getMessage("gui.main.help-lore").split("\n")));
         inventory.setItem(15, helpItem);
         
-        // 设置按钮
-        ItemStack settingsItem = createItem(player, Material.COMPARATOR, 
-                messages.getMessage("gui.main.settings"), 
-                Arrays.asList(messages.getMessage("gui.main.settings-lore").split("\n")));
-        inventory.setItem(31, settingsItem);
-        
         player.openInventory(inventory);
         openInventories.put(player.getUniqueId(), GUIType.MAIN_MENU);
-        
-        // 启动动态更新任务
         startGuiUpdateTask(player);
     }
     
     public void openBuyMenu(Player player) {
         Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 36, 
-                ChatColor.translateAlternateColorCodes('&', messages.getMessage("gui.buy.title")));
+        Inventory inventory = Bukkit.createInventory(null, 27, 
+                ChatColor.translateAlternateColorCodes('&', 
+                messages.getMessage("gui.buy.title")));
         
-        // 1天
+        // 1天按钮
         double price1d = plugin.getConfig().getDouble("prices.1d");
-        ItemStack item1d = createItem(player, Material.CLOCK, 
+        ItemStack item1d = createItem(player, Material.EMERALD, 
                 messages.getMessage("gui.buy.one-day"), 
                 Arrays.asList(messages.getMessage("gui.buy.one-day-lore")
                         .replace("%price%", formatPrice(price1d))
                         .split("\n")));
-        inventory.setItem(10, item1d);
+        inventory.setItem(11, item1d);
         
-        // 7天
+        // 7天按钮
         double price7d = plugin.getConfig().getDouble("prices.7d");
-        ItemStack item7d = createItem(player, Material.CLOCK, 
+        ItemStack item7d = createItem(player, Material.EMERALD_BLOCK, 
                 messages.getMessage("gui.buy.seven-days"), 
                 Arrays.asList(messages.getMessage("gui.buy.seven-days-lore")
                         .replace("%price%", formatPrice(price7d))
                         .split("\n")));
         inventory.setItem(13, item7d);
         
-        // 30天
+        // 30天按钮
         double price30d = plugin.getConfig().getDouble("prices.30d");
-        ItemStack item30d = createItem(player, Material.CLOCK, 
+        ItemStack item30d = createItem(player, Material.DIAMOND, 
                 messages.getMessage("gui.buy.thirty-days"), 
                 Arrays.asList(messages.getMessage("gui.buy.thirty-days-lore")
                         .replace("%price%", formatPrice(price30d))
                         .split("\n")));
-        inventory.setItem(16, item30d);
+        inventory.setItem(15, item30d);
         
         // 返回按钮
         ItemStack backItem = createItem(player, Material.BARRIER, 
                 messages.getMessage("gui.common.back"), 
                 Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
-        inventory.setItem(31, backItem);
+        inventory.setItem(22, backItem);
         
         player.openInventory(inventory);
         openInventories.put(player.getUniqueId(), GUIType.BUY_MENU);
@@ -373,31 +358,25 @@ public class GUIManager implements Listener {
     
     private void handleMainMenuClick(Player player, int slot) {
         switch (slot) {
-            case 11: // 检查状态
-                player.closeInventory();
-                player.performCommand("deathkeep check");
-                break;
-                
-            case 13: // 购买保护
+            case 11: // 购买保护
                 openBuyMenu(player);
                 break;
                 
-            case 15: // 粒子设置
-                player.closeInventory();
-                player.performCommand("deathkeep particles");
+            case 13: // 粒子效果
+                toggleParticles(player);
+                openMainMenu(player); // 刷新界面
                 break;
                 
-            case 31: // 管理员面板
-                if (player.hasPermission("deathkeep.admin")) {
-                    openAdminMenu(player);
-                }
+            case 15: // 帮助
+                player.closeInventory();
+                player.performCommand("deathkeep help");
                 break;
         }
     }
     
     private void handleBuyMenuClick(Player player, int slot) {
         switch (slot) {
-            case 10: // 1天
+            case 11: // 1天
                 buyProtection(player, 1);
                 break;
                 
@@ -405,11 +384,11 @@ public class GUIManager implements Listener {
                 buyProtection(player, 7);
                 break;
                 
-            case 16: // 30天
+            case 15: // 30天
                 buyProtection(player, 30);
                 break;
                 
-            case 31: // 返回
+            case 22: // 返回
                 openMainMenu(player);
                 break;
         }
@@ -539,6 +518,15 @@ public class GUIManager implements Listener {
                     break;
             }
         }
+    }
+    
+    private void toggleParticles(Player player) {
+        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        boolean newState = !playerData.isParticlesEnabled();
+        playerData.setParticlesEnabled(newState);
+        
+        Messages messages = plugin.getMessages();
+        player.sendMessage(messages.getMessage("command.particles." + (newState ? "enabled" : "disabled")));
     }
     
     private void buyProtection(Player player, int days) {
