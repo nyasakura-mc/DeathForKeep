@@ -49,9 +49,12 @@ public class GUIManager implements Listener {
                 parsePlaceholders(player, messages.getMessage("gui.main.title"))));
         
         // 购买保护按钮
+        double basePrice = plugin.getConfig().getDouble("prices.1d");
         ItemStack buyItem = createItem(player, Material.EMERALD, 
                 messages.getMessage("gui.main.buy"), 
-                Arrays.asList(messages.getMessage("gui.main.buy-lore").split("\n")));
+                Arrays.asList(messages.getMessage("gui.main.buy-lore")
+                        .replace("%price%", parsePlaceholders(player, String.format("%.2f", basePrice)))
+                        .split("\n")));
         inventory.setItem(11, buyItem);
         
         // 粒子效果按钮
@@ -390,17 +393,14 @@ public class GUIManager implements Listener {
     private void handleBuyMenuClick(Player player, int slot) {
         switch (slot) {
             case 11: // 1天
-                buyProtection(player, 1);
+                confirmPurchase(player, 1);
                 break;
-                
             case 13: // 7天
-                buyProtection(player, 7);
+                confirmPurchase(player, 7);
                 break;
-                
             case 15: // 30天
-                buyProtection(player, 30);
+                confirmPurchase(player, 30);
                 break;
-                
             case 22: // 返回
                 openMainMenu(player);
                 break;
@@ -542,9 +542,19 @@ public class GUIManager implements Listener {
         player.sendMessage(messages.getMessage("command.particles." + (newState ? "enabled" : "disabled")));
     }
     
-    private void buyProtection(Player player, int days) {
-        player.closeInventory();
-        player.performCommand("deathkeep buy " + days);
+    private void confirmPurchase(Player player, int days) {
+        double price = plugin.getConfig().getDouble("prices." + days + "d");
+        if (plugin.getEconomy().has(player, price)) {
+            plugin.getEconomy().withdrawPlayer(player, price);
+            plugin.addProtection(player.getUniqueId(), days * 86400);
+            player.sendMessage(plugin.getMessages().getMessage("command.buy.success")
+                    .replace("%days%", String.valueOf(days))
+                    .replace("%price%", String.format("%.2f", price)));
+            openMainMenu(player);
+        } else {
+            player.sendMessage(plugin.getMessages().getMessage("command.buy.not-enough-money")
+                    .replace("%price%", String.format("%.2f", price)));
+        }
     }
     
     private String parsePlaceholders(Player player, String text) {
