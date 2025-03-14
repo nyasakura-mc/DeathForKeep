@@ -142,8 +142,8 @@ gui:
     title: "&6死亡物品保护"
     buy: "&a购买保护"
     buy-lore: |
-      &7点击进入购买界面
-      &7基础价格: &e%price% &7金币/天
+      &7基础价格: &6%price% &7金币/天
+      &e左击进入购买界面
     particles: "&e粒子效果"
     particles-lore: |
       &7当前状态: %status%

@@ -55,9 +55,13 @@ public class GUIManager implements Listener {
                 messages.getMessage("gui.main.title")));
         
         // 购买保护按钮
+        double price1d = plugin.getConfig().getDouble("prices.1d");
+        String priceStr = String.format("%.2f", price1d); // 格式化价格为两位小数
         ItemStack buyItem = createItem(player, Material.EMERALD, 
                 messages.getMessage("gui.main.buy"), 
-                Arrays.asList(messages.getMessage("gui.main.buy-lore").split("\n")));
+                Arrays.asList(messages.getMessage("gui.main.buy-lore")
+                        .replace("%price%", priceStr)
+                        .split("\n")));
         inventory.setItem(11, buyItem);
         
         // 粒子效果按钮
