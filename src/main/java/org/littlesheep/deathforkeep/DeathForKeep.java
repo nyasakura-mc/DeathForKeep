@@ -14,6 +14,7 @@ import org.littlesheep.deathforkeep.gui.GUIManager;
 import org.littlesheep.deathforkeep.hooks.PlaceholderHook;
 import org.littlesheep.deathforkeep.listeners.DeathListener;
 import org.littlesheep.deathforkeep.listeners.JoinListener;
+import org.littlesheep.deathforkeep.listeners.ChatListener;
 import org.littlesheep.deathforkeep.tasks.ReminderTask;
 import org.littlesheep.deathforkeep.utils.*;
 
@@ -75,6 +76,7 @@ public final class DeathForKeep extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new DeathListener(this), this);
         getServer().getPluginManager().registerEvents(new JoinListener(this), this);
         getServer().getPluginManager().registerEvents(guiManager, this);
+        Bukkit.getPluginManager().registerEvents(new ChatListener(this), this);
         
         // 启动提醒任务
         reminderTask = new ReminderTask(this);

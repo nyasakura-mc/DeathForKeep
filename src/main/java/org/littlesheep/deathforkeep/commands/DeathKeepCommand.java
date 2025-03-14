@@ -11,6 +11,7 @@ import org.bukkit.OfflinePlayer;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.utils.Messages;
+import org.bukkit.ChatColor;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -29,24 +30,21 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         Messages messages = plugin.getMessages();
         
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(messages.getMessage("command.player-only"));
-            return true;
-        }
-
-        Player player = (Player) sender;
-
-        if (args.length == 0 || args[0].equalsIgnoreCase("gui")) {
-            // 打开主菜单
-            plugin.getGuiManager().openMainMenu(player);
-            return true;
+        if (args.length == 0) {
+            return handleHelp(sender);
         }
         
         switch (args[0].toLowerCase()) {
             case "help":
                 return handleHelp(sender);
             case "bulk":
-                return handleBulk(sender, args);
+                if (args.length >= 2 && ("add".equals(args[1]) || "remove".equals(args[1]))) {
+                    return handleBulk(sender, args);
+                } else {
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', 
+                        messages.getMessage("command.bulk.usage")));
+                    return true;
+                }
             case "buy":
                 return handleBuy(sender, args);
             case "check":
@@ -75,7 +73,7 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleHelp(CommandSender sender) {
         Messages messages = plugin.getMessages();
-        sender.sendMessage(messages.getMessage("commands.help.title"));
+        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', messages.getMessage("commands.help.title")));
         
         List<String> helpLines = messages.getMessageList("commands.help.lines");
         for (String line : helpLines) {
@@ -83,7 +81,7 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             if (line.contains("/dk bulk") && !sender.hasPermission("deathkeep.admin")) {
                 continue;
             }
-            sender.sendMessage(line);
+            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', line));
         }
         return true;
     }
