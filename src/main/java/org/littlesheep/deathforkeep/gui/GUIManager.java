@@ -31,7 +31,7 @@ public class GUIManager implements Listener {
     
     public enum GUIType {
         MAIN_MENU,
-        BUY_MENU,
+        DURATION_MENU,
         ADMIN_MENU,
         ADMIN_PLAYER_LIST,
         ADMIN_BATCH_ACTIONS
@@ -44,9 +44,9 @@ public class GUIManager implements Listener {
     
     public void openMainMenu(Player player) {
         Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 36, 
+        Inventory inventory = Bukkit.createInventory(null, 27, 
                 ChatColor.translateAlternateColorCodes('&', 
-                parsePlaceholders(player, messages.getMessage("gui.main.title"))));
+                messages.getMessage("gui.main.title")));
         
         // 购买保护按钮
         ItemStack buyItem = createItem(player, Material.EMERALD, 
@@ -71,49 +71,48 @@ public class GUIManager implements Listener {
                 Arrays.asList(messages.getMessage("gui.main.help-lore").split("\n")));
         inventory.setItem(15, helpItem);
         
-        // 管理员按钮 (仅对有权限的玩家显示)
+        // 管理员按钮
         if (player.hasPermission("deathkeep.admin")) {
             ItemStack adminItem = createItem(player, Material.COMMAND_BLOCK, 
                     messages.getMessage("gui.main.admin"), 
                     Arrays.asList(messages.getMessage("gui.main.admin-lore").split("\n")));
-            inventory.setItem(31, adminItem);
+            inventory.setItem(22, adminItem);
         }
         
         player.openInventory(inventory);
         openInventories.put(player.getUniqueId(), GUIType.MAIN_MENU);
-        startGuiUpdateTask(player);
     }
     
-    public void openBuyMenu(Player player) {
+    public void openDurationMenu(Player player) {
         Messages messages = plugin.getMessages();
         Inventory inventory = Bukkit.createInventory(null, 27, 
                 ChatColor.translateAlternateColorCodes('&', 
-                messages.getMessage("gui.buy.title")));
+                messages.getMessage("gui.duration.title")));
         
-        // 1天按钮
+        // 1天选项
         double price1d = plugin.getConfig().getDouble("prices.1d");
-        ItemStack item1d = createItem(player, Material.EMERALD, 
-                messages.getMessage("gui.buy.one-day"), 
-                Arrays.asList(messages.getMessage("gui.buy.one-day-lore")
-                        .replace("%price%", formatPrice(price1d))
+        ItemStack item1d = createItem(player, Material.CLOCK, 
+                messages.getMessage("gui.duration.one-day"), 
+                Arrays.asList(messages.getMessage("gui.duration.one-day-lore")
+                        .replace("%price%", String.format("%.2f", price1d))
                         .split("\n")));
         inventory.setItem(11, item1d);
         
-        // 7天按钮
+        // 7天选项
         double price7d = plugin.getConfig().getDouble("prices.7d");
-        ItemStack item7d = createItem(player, Material.EMERALD_BLOCK, 
-                messages.getMessage("gui.buy.seven-days"), 
-                Arrays.asList(messages.getMessage("gui.buy.seven-days-lore")
-                        .replace("%price%", formatPrice(price7d))
+        ItemStack item7d = createItem(player, Material.SUNFLOWER, 
+                messages.getMessage("gui.duration.seven-days"), 
+                Arrays.asList(messages.getMessage("gui.duration.seven-days-lore")
+                        .replace("%price%", String.format("%.2f", price7d))
                         .split("\n")));
         inventory.setItem(13, item7d);
         
-        // 30天按钮
+        // 30天选项
         double price30d = plugin.getConfig().getDouble("prices.30d");
-        ItemStack item30d = createItem(player, Material.DIAMOND, 
-                messages.getMessage("gui.buy.thirty-days"), 
-                Arrays.asList(messages.getMessage("gui.buy.thirty-days-lore")
-                        .replace("%price%", formatPrice(price30d))
+        ItemStack item30d = createItem(player, Material.EMERALD, 
+                messages.getMessage("gui.duration.thirty-days"), 
+                Arrays.asList(messages.getMessage("gui.duration.thirty-days-lore")
+                        .replace("%price%", String.format("%.2f", price30d))
                         .split("\n")));
         inventory.setItem(15, item30d);
         
@@ -124,7 +123,7 @@ public class GUIManager implements Listener {
         inventory.setItem(22, backItem);
         
         player.openInventory(inventory);
-        openInventories.put(player.getUniqueId(), GUIType.BUY_MENU);
+        openInventories.put(player.getUniqueId(), GUIType.DURATION_MENU);
     }
     
     public void openAdminMenu(Player player) {
@@ -337,19 +336,15 @@ public class GUIManager implements Listener {
             case MAIN_MENU:
                 handleMainMenuClick(player, slot);
                 break;
-                
-            case BUY_MENU:
-                handleBuyMenuClick(player, slot);
+            case DURATION_MENU:
+                handleDurationMenuClick(player, slot);
                 break;
-                
             case ADMIN_MENU:
                 handleAdminMenuClick(player, slot);
                 break;
-                
             case ADMIN_PLAYER_LIST:
                 handlePlayerListClick(player, slot);
                 break;
-                
             case ADMIN_BATCH_ACTIONS:
                 handleBatchActionsClick(player, slot);
                 break;
@@ -366,20 +361,17 @@ public class GUIManager implements Listener {
     private void handleMainMenuClick(Player player, int slot) {
         switch (slot) {
             case 11: // 购买保护
-                openBuyMenu(player);
+                openDurationMenu(player);
                 break;
-                
             case 13: // 粒子效果
                 toggleParticles(player);
-                openMainMenu(player); // 刷新界面
+                openMainMenu(player);
                 break;
-                
             case 15: // 帮助
                 player.closeInventory();
-                player.performCommand("deathkeep help");
+                player.performCommand("dk help");
                 break;
-                
-            case 31: // 管理员面板
+            case 22: // 管理员
                 if (player.hasPermission("deathkeep.admin")) {
                     openAdminMenu(player);
                 }
@@ -387,7 +379,7 @@ public class GUIManager implements Listener {
         }
     }
     
-    private void handleBuyMenuClick(Player player, int slot) {
+    private void handleDurationMenuClick(Player player, int slot) {
         switch (slot) {
             case 11: // 1天
                 confirmPurchase(player, 1);
@@ -578,44 +570,5 @@ public class GUIManager implements Listener {
             item.setItemMeta(meta);
         }
         return item;
-    }
-    
-    private void startGuiUpdateTask(Player player) {
-        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            if (!player.isOnline() || !openInventories.containsKey(player.getUniqueId())) {
-                return;
-            }
-            
-            Inventory inv = player.getOpenInventory().getTopInventory();
-            if (inv == null) return;
-            
-            // 更新状态按钮
-            ItemStack statusItem = inv.getItem(11);
-            if (statusItem != null && statusItem.getType() == Material.COMPASS) {
-                List<String> statusLore = new ArrayList<>();
-                String statusLoreText = plugin.getMessages().getMessage("gui.main.status-lore")
-                        .replace("%status%", "%deathkeep_status%")
-                        .replace("%time%", "%deathkeep_time%")
-                        .replace("%particles%", "%deathkeep_particles%")
-                        .replace("%share_status%", "%deathkeep_share_status%");
-                        
-                for (String line : statusLoreText.split("\n")) {
-                    statusLore.add(parsePlaceholders(player, line));
-                }
-                
-                ItemMeta meta = statusItem.getItemMeta();
-                if (meta != null) {
-                    meta.setLore(statusLore);
-                    statusItem.setItemMeta(meta);
-                }
-            }
-        }, 20L, 20L); // 每秒更新一次
-    }
-    
-    private String formatPrice(double price) {
-        if (price == (int) price) {
-            return String.valueOf((int) price);
-        }
-        return String.format("%.2f", price);
     }
 } 
