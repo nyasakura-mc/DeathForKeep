@@ -60,6 +60,8 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
                 return handleFind(sender, args);
             case "resetall":
                 return handleResetAll(sender);
+            case "gui":
+                return handleGui(sender);    
             default:
                 sender.sendMessage(messages.getMessage("command.unknown"));
                 return true;
@@ -423,6 +425,17 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(messages.getMessage("command.resetall.confirm"));
         }
         
+        return true;
+    }
+
+    private boolean handleGui(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(plugin.getMessages().getMessage("command.player-only"));
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        plugin.getGuiManager().openMainMenu(player);
         return true;
     }
 

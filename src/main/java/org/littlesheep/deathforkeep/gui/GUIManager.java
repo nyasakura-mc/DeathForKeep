@@ -27,8 +27,10 @@ public class GUIManager implements Listener {
     private final Map<UUID, Integer> adminPageMap = new HashMap<>();
     private final Map<UUID, List<UUID>> selectedPlayers = new HashMap<>();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private final Map<UUID, Long> lastClickTime = new HashMap<>();
     
     private static final int PLAYERS_PER_PAGE = 45;
+    private static final long CLICK_COOLDOWN = 500;
     
     public enum GUIType {
         MAIN_MENU,
@@ -92,53 +94,56 @@ public class GUIManager implements Listener {
     }
     
     public void openDurationMenu(Player player) {
-        // 确保移除之前的状态
-        openInventories.remove(player.getUniqueId());
-        
-        Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 27, 
-                ChatColor.translateAlternateColorCodes('&', 
-                messages.getMessage("gui.duration.title")));
-        
-        // 1天选项
-        double price1d = plugin.getConfig().getDouble("prices.1d");
-        ItemStack item1d = createItem(player, Material.CLOCK, 
-                messages.getMessage("gui.duration.one-day"), 
-                Arrays.asList(messages.getMessage("gui.duration.one-day-lore")
-                        .replace("%price%", String.format("%.2f", price1d))
-                        .split("\n")));
-        inventory.setItem(11, item1d);
-        
-        // 7天选项
-        double price7d = plugin.getConfig().getDouble("prices.7d");
-        ItemStack item7d = createItem(player, Material.SUNFLOWER, 
-                messages.getMessage("gui.duration.seven-days"), 
-                Arrays.asList(messages.getMessage("gui.duration.seven-days-lore")
-                        .replace("%price%", String.format("%.2f", price7d))
-                        .split("\n")));
-        inventory.setItem(13, item7d);
-        
-        // 30天选项
-        double price30d = plugin.getConfig().getDouble("prices.30d");
-        ItemStack item30d = createItem(player, Material.EMERALD, 
-                messages.getMessage("gui.duration.thirty-days"), 
-                Arrays.asList(messages.getMessage("gui.duration.thirty-days-lore")
-                        .replace("%price%", String.format("%.2f", price30d))
-                        .split("\n")));
-        inventory.setItem(15, item30d);
-        
-        // 返回按钮
-        ItemStack backItem = createItem(player, Material.BARRIER, 
-                messages.getMessage("gui.common.back"), 
-                Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
-        inventory.setItem(22, backItem);
-        
-        player.openInventory(inventory);
-        // 在打开后设置状态
-        openInventories.put(player.getUniqueId(), GUIType.DURATION_MENU);
-        
-        // 调试日志
-        plugin.getLogger().info("为玩家 " + player.getName() + " 打开时长选择菜单，GUI类型已设置为: " + GUIType.DURATION_MENU);
+        // 使用延迟任务打开菜单，避免可能的事件冲突
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            // 确保移除之前的状态
+            openInventories.remove(player.getUniqueId());
+            
+            Messages messages = plugin.getMessages();
+            Inventory inventory = Bukkit.createInventory(null, 27, 
+                    ChatColor.translateAlternateColorCodes('&', 
+                    messages.getMessage("gui.duration.title")));
+            
+            // 1天选项
+            double price1d = plugin.getConfig().getDouble("prices.1d");
+            ItemStack item1d = createItem(player, Material.CLOCK, 
+                    messages.getMessage("gui.duration.one-day"), 
+                    Arrays.asList(messages.getMessage("gui.duration.one-day-lore")
+                            .replace("%price%", String.format("%.2f", price1d))
+                            .split("\n")));
+            inventory.setItem(11, item1d);
+            
+            // 7天选项
+            double price7d = plugin.getConfig().getDouble("prices.7d");
+            ItemStack item7d = createItem(player, Material.SUNFLOWER, 
+                    messages.getMessage("gui.duration.seven-days"), 
+                    Arrays.asList(messages.getMessage("gui.duration.seven-days-lore")
+                            .replace("%price%", String.format("%.2f", price7d))
+                            .split("\n")));
+            inventory.setItem(13, item7d);
+            
+            // 30天选项
+            double price30d = plugin.getConfig().getDouble("prices.30d");
+            ItemStack item30d = createItem(player, Material.EMERALD, 
+                    messages.getMessage("gui.duration.thirty-days"), 
+                    Arrays.asList(messages.getMessage("gui.duration.thirty-days-lore")
+                            .replace("%price%", String.format("%.2f", price30d))
+                            .split("\n")));
+            inventory.setItem(15, item30d);
+            
+            // 返回按钮
+            ItemStack backItem = createItem(player, Material.BARRIER, 
+                    messages.getMessage("gui.common.back"), 
+                    Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
+            inventory.setItem(22, backItem);
+            
+            player.openInventory(inventory);
+            // 在打开后设置状态
+            openInventories.put(player.getUniqueId(), GUIType.DURATION_MENU);
+            
+            // 调试日志
+            plugin.getLogger().info("为玩家 " + player.getName() + " 打开时长选择菜单，GUI类型已设置为: " + GUIType.DURATION_MENU);
+        }, 1L); // 1 tick 延迟
     }
     
     public void openAdminMenu(Player player) {
@@ -343,6 +348,17 @@ public class GUIManager implements Listener {
         if (!openInventories.containsKey(playerUUID)) {
             return;
         }
+        
+        // 添加点击冷却检查
+        long currentTime = System.currentTimeMillis();
+        if (lastClickTime.containsKey(playerUUID)) {
+            long lastClick = lastClickTime.get(playerUUID);
+            if (currentTime - lastClick < CLICK_COOLDOWN) {
+                event.setCancelled(true);
+                return;
+            }
+        }
+        lastClickTime.put(playerUUID, currentTime);
         
         event.setCancelled(true);
         if (event.getRawSlot() < 0) return;
