@@ -210,6 +210,14 @@ gui:
     reset-all-lore: "&7重置所有玩家数据"
     back: "&c返回"
     back-lore: "&7返回主菜单"
+    batch-add: "&a批量增加保护"
+    batch-add-lore: |
+      &7为多个玩家增加保护时长
+      &7点击打开批量增加界面
+    batch-remove: "&c批量减少保护"
+    batch-remove-lore: |
+      &7为多个玩家减少保护时长
+      &7点击打开批量减少界面
 
   player-list:
     title: "&6玩家列表 - 第 %page% 页"
@@ -246,6 +254,8 @@ gui:
     select-all-lore: "&7选择所有玩家"
     deselect-all: "&c取消全选"
     deselect-all-lore: "&7取消选择所有玩家"
+    add-title: "&a批量添加保护"
+    remove-title: "&c批量减少保护"
 
   settings:
     title: "&6死亡物品保护 - 设置"
@@ -289,4 +299,21 @@ database:
   saving: "正在保存数据..."
   saved: "数据保存完成！"
   loading: "正在加载数据..."
-  loaded: "数据加载完成！" 
+  loaded: "数据加载完成！"
+
+commands:
+  help:
+    title: "&6=== DeathKeep 帮助 ==="
+    lines:
+      - "&a/dk buy &7- 打开购买菜单"
+      - "&a/dk gui &7- 打开图形界面"
+      - "&a/dk help &7- 查看帮助"
+      - "&c/dk bulk add <时长> <玩家> &7- 批量增加时长（管理员）"
+      - "&c/dk bulk remove <时长> <玩家> &7- 批量减少时长（管理员）"
+  bulk:
+    usage: "&c用法: /dk bulk <add|remove> <时长> <玩家列表>"
+    invalid-operation: "&c无效的操作，请使用 add 或 remove"
+    no-players-found: "&c未找到有效玩家"
+    add-success: "&a成功为 %count% 名玩家增加了 %duration% 的保护时长"
+    remove-success: "&a成功为 %count% 名玩家减少了 %duration% 的保护时长"
+    failed-players: "&c以下玩家未找到: %players%" 

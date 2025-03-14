@@ -19,6 +19,7 @@ import org.littlesheep.deathforkeep.utils.Messages;
 import me.clip.placeholderapi.PlaceholderAPI;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import org.bukkit.metadata.FixedMetadataValue;
 
 public class GUIManager implements Listener {
     
@@ -152,7 +153,7 @@ public class GUIManager implements Listener {
     
     public void openAdminMenu(Player player) {
         Messages messages = plugin.getMessages();
-        Inventory inventory = Bukkit.createInventory(null, 27, 
+        Inventory inventory = Bukkit.createInventory(null, 36, 
                 ChatColor.translateAlternateColorCodes('&', 
                 messages.getMessage("gui.admin-menu.title")));
         
@@ -162,23 +163,29 @@ public class GUIManager implements Listener {
                 Arrays.asList(messages.getMessage("gui.admin-menu.player-list-lore").split("\n")));
         inventory.setItem(11, listItem);
         
-        // 批量操作按钮
-        ItemStack batchItem = createItem(player, Material.CHEST, 
-                messages.getMessage("gui.admin-menu.batch-actions"), 
-                Arrays.asList(messages.getMessage("gui.admin-menu.batch-actions-lore").split("\n")));
-        inventory.setItem(13, batchItem);
+        // 批量增加按钮
+        ItemStack addBatchItem = createItem(player, Material.EMERALD, 
+                messages.getMessage("gui.admin-menu.batch-add"), 
+                Arrays.asList(messages.getMessage("gui.admin-menu.batch-add-lore").split("\n")));
+        inventory.setItem(13, addBatchItem);
+        
+        // 批量减少按钮
+        ItemStack removeBatchItem = createItem(player, Material.REDSTONE, 
+                messages.getMessage("gui.admin-menu.batch-remove"), 
+                Arrays.asList(messages.getMessage("gui.admin-menu.batch-remove-lore").split("\n")));
+        inventory.setItem(15, removeBatchItem);
         
         // 重置数据按钮
         ItemStack resetItem = createItem(player, Material.BARRIER, 
                 messages.getMessage("gui.admin-menu.reset-all"), 
                 Arrays.asList(messages.getMessage("gui.admin-menu.reset-all-lore").split("\n")));
-        inventory.setItem(15, resetItem);
+        inventory.setItem(22, resetItem);
         
         // 返回按钮
         ItemStack backItem = createItem(player, Material.BARRIER, 
                 messages.getMessage("gui.common.back"), 
                 Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
-        inventory.setItem(22, backItem);
+        inventory.setItem(31, backItem);
         
         player.openInventory(inventory);
         openInventories.put(player.getUniqueId(), GUIType.ADMIN_MENU);
@@ -272,10 +279,14 @@ public class GUIManager implements Listener {
         openInventories.put(player.getUniqueId(), GUIType.ADMIN_PLAYER_LIST);
     }
     
-    public void openBatchActionsMenu(Player player) {
+    public void openBatchActionsMenu(Player player, boolean isAddMode) {
         Messages messages = plugin.getMessages();
+        String title = isAddMode ? 
+                messages.getMessage("gui.batch-actions.add-title") : 
+                messages.getMessage("gui.batch-actions.remove-title");
+        
         Inventory inventory = Bukkit.createInventory(null, 54, 
-                ChatColor.translateAlternateColorCodes('&', messages.getMessage("gui.batch-actions.title")));
+                ChatColor.translateAlternateColorCodes('&', title));
         
         // 获取所有在线玩家
         List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
@@ -320,17 +331,21 @@ public class GUIManager implements Listener {
                 Arrays.asList(messages.getMessage("gui.batch-actions.deselect-all-lore").split("\n")));
         inventory.setItem(47, deselectAllItem);
         
-        // 批量添加保护按钮
-        ItemStack addItem = createItem(player, Material.EMERALD, 
-                messages.getMessage("gui.batch-actions.add-protection"), 
-                Arrays.asList(messages.getMessage("gui.batch-actions.add-protection-lore").split("\n")));
-        inventory.setItem(51, addItem);
+        // 操作按钮 (添加或移除)
+        Material actionMaterial = isAddMode ? Material.EMERALD : Material.REDSTONE;
+        String actionText = isAddMode ? 
+                messages.getMessage("gui.batch-actions.add-protection") : 
+                messages.getMessage("gui.batch-actions.remove-protection");
+        String actionLore = isAddMode ? 
+                messages.getMessage("gui.batch-actions.add-protection-lore") : 
+                messages.getMessage("gui.batch-actions.remove-protection-lore");
         
-        // 批量移除保护按钮
-        ItemStack removeItem = createItem(player, Material.BARRIER, 
-                messages.getMessage("gui.batch-actions.remove-protection"), 
-                Arrays.asList(messages.getMessage("gui.batch-actions.remove-protection-lore").split("\n")));
-        inventory.setItem(52, removeItem);
+        ItemStack actionItem = createItem(player, actionMaterial, 
+                actionText, Arrays.asList(actionLore.split("\n")));
+        inventory.setItem(51, actionItem);
+        
+        // 存储当前操作模式
+        player.setMetadata("dk_batch_mode", new FixedMetadataValue(plugin, isAddMode));
         
         // 返回按钮
         ItemStack backItem = createItem(player, Material.BARRIER, 
@@ -433,16 +448,20 @@ public class GUIManager implements Listener {
                 openPlayerListMenu(player, 0);
                 break;
                 
-            case 13: // 批量操作
-                openBatchActionsMenu(player);
+            case 13: // 批量增加
+                openBatchActionsMenu(player, true);
                 break;
                 
-            case 15: // 重置所有数据
+            case 15: // 批量减少
+                openBatchActionsMenu(player, false);
+                break;
+                
+            case 22: // 重置所有数据
                 player.closeInventory();
-                player.performCommand("deathkeep resetall");
+                player.performCommand("dk resetall");
                 break;
                 
-            case 22: // 返回
+            case 31: // 返回
                 openMainMenu(player);
                 break;
         }
@@ -489,6 +508,7 @@ public class GUIManager implements Listener {
     private void handleBatchActionsClick(Player player, int slot) {
         Messages messages = plugin.getMessages();
         List<UUID> selected = selectedPlayers.getOrDefault(player.getUniqueId(), new ArrayList<>());
+        boolean isAddMode = player.hasMetadata("dk_batch_mode") && player.getMetadata("dk_batch_mode").get(0).asBoolean();
         
         if (slot >= 0 && slot < 45) {
             // 玩家选择
@@ -503,7 +523,7 @@ public class GUIManager implements Listener {
                     selected.add(targetUUID);
                 }
                 
-                openBatchActionsMenu(player);
+                openBatchActionsMenu(player, isAddMode);
             }
         } else {
             switch (slot) {
@@ -512,38 +532,40 @@ public class GUIManager implements Listener {
                     for (Player online : Bukkit.getOnlinePlayers()) {
                         selected.add(online.getUniqueId());
                     }
-                    openBatchActionsMenu(player);
+                    openBatchActionsMenu(player, isAddMode);
                     break;
                     
                 case 47: // 取消全选
                     selected.clear();
-                    openBatchActionsMenu(player);
+                    openBatchActionsMenu(player, isAddMode);
                     break;
                     
-                case 51: // 批量添加保护
+                case 51: // 执行批量操作
                     if (selected.isEmpty()) {
                         player.sendMessage(messages.getMessage("gui.batch-actions.no-selection"));
                         return;
                     }
+                    
                     player.closeInventory();
-                    player.sendMessage(messages.getMessage("gui.batch-actions.enter-days"));
-                    break;
                     
-                case 52: // 批量移除保护
-                    if (selected.isEmpty()) {
-                        player.sendMessage(messages.getMessage("gui.batch-actions.no-selection"));
-                        return;
-                    }
+                    // 构建玩家列表字符串
+                    StringBuilder playerList = new StringBuilder();
                     for (UUID uuid : selected) {
                         Player target = Bukkit.getPlayer(uuid);
                         if (target != null) {
-                            plugin.removeProtection(target.getUniqueId());
+                            if (playerList.length() > 0) {
+                                playerList.append(",");
+                            }
+                            playerList.append(target.getName());
                         }
                     }
-                    player.sendMessage(messages.getMessage("gui.batch-actions.removed")
-                            .replace("%count%", String.valueOf(selected.size())));
-                    selected.clear();
-                    openBatchActionsMenu(player);
+                    
+                    // 要求输入时长
+                    player.sendMessage(messages.getMessage("gui.batch-actions.enter-days"));
+                    
+                    // 设置元数据以便其他插件可以处理输入
+                    player.setMetadata("dk_bulk_mode", new FixedMetadataValue(plugin, isAddMode ? "add" : "remove"));
+                    player.setMetadata("dk_bulk_players", new FixedMetadataValue(plugin, playerList.toString()));
                     break;
                     
                 case 49: // 返回

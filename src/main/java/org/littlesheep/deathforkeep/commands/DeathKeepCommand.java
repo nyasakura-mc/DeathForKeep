@@ -7,6 +7,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.OfflinePlayer;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.utils.Messages;
@@ -40,8 +41,12 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             plugin.getGuiManager().openMainMenu(player);
             return true;
         }
-
+        
         switch (args[0].toLowerCase()) {
+            case "help":
+                return handleHelp(sender);
+            case "bulk":
+                return handleBulk(sender, args);
             case "buy":
                 return handleBuy(sender, args);
             case "check":
@@ -65,6 +70,174 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             default:
                 sender.sendMessage(messages.getMessage("command.unknown"));
                 return true;
+        }
+    }
+
+    private boolean handleHelp(CommandSender sender) {
+        Messages messages = plugin.getMessages();
+        sender.sendMessage(messages.getMessage("commands.help.title"));
+        
+        List<String> helpLines = messages.getMessageList("commands.help.lines");
+        for (String line : helpLines) {
+            // 检查是否是管理员命令行，如果不是管理员则不显示
+            if (line.contains("/dk bulk") && !sender.hasPermission("deathkeep.admin")) {
+                continue;
+            }
+            sender.sendMessage(line);
+        }
+        return true;
+    }
+
+    @SuppressWarnings("deprecation")
+    private boolean handleBulk(CommandSender sender, String[] args) {
+        Messages messages = plugin.getMessages();
+        
+        if (!sender.hasPermission("deathkeep.admin")) {
+            sender.sendMessage(messages.getMessage("command.no-permission"));
+            return true;
+        }
+        
+        if (args.length < 4) {
+            sender.sendMessage(messages.getMessage("command.bulk.usage"));
+            return true;
+        }
+        
+        String operation = args[1].toLowerCase();
+        String durationStr = args[2];
+        String playersStr = args[3];
+        
+        // 解析时长
+        int seconds;
+        try {
+            seconds = parseDuration(durationStr);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage(messages.getMessage("command.invalid-duration"));
+            return true;
+        }
+        
+        // 解析玩家列表
+        String[] playerNames = playersStr.split(",");
+        List<UUID> affectedPlayers = new ArrayList<>();
+        List<String> failedPlayers = new ArrayList<>();
+        
+        for (String name : playerNames) {
+            UUID uuid = null;
+            // 尝试直接获取在线玩家
+            Player target = Bukkit.getPlayer(name);
+            if (target != null) {
+                uuid = target.getUniqueId();
+            } else {
+                // 尝试获取离线玩家
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+                if (offlinePlayer.hasPlayedBefore()) {
+                    uuid = offlinePlayer.getUniqueId();
+                }
+            }
+            
+            if (uuid != null) {
+                affectedPlayers.add(uuid);
+            } else {
+                failedPlayers.add(name);
+            }
+        }
+        
+        if (affectedPlayers.isEmpty()) {
+            sender.sendMessage(messages.getMessage("command.bulk.no-players-found"));
+            return true;
+        }
+        
+        // 执行批量操作
+        if ("add".equals(operation)) {
+            for (UUID uuid : affectedPlayers) {
+                addProtectionDuration(uuid, seconds);
+            }
+            sender.sendMessage(messages.getMessage("command.bulk.add-success")
+                    .replace("%count%", String.valueOf(affectedPlayers.size()))
+                    .replace("%duration%", formatDuration(seconds)));
+        } else if ("remove".equals(operation)) {
+            for (UUID uuid : affectedPlayers) {
+                removeProtectionDuration(uuid, seconds);
+            }
+            sender.sendMessage(messages.getMessage("command.bulk.remove-success")
+                    .replace("%count%", String.valueOf(affectedPlayers.size()))
+                    .replace("%duration%", formatDuration(seconds)));
+        } else {
+            sender.sendMessage(messages.getMessage("command.bulk.invalid-operation"));
+            return true;
+        }
+        
+        // 报告未找到的玩家
+        if (!failedPlayers.isEmpty()) {
+            sender.sendMessage(messages.getMessage("command.bulk.failed-players")
+                    .replace("%players%", String.join(", ", failedPlayers)));
+        }
+        
+        return true;
+    }
+
+    private void addProtectionDuration(UUID uuid, int seconds) {
+        PlayerData data = plugin.getPlayerData(uuid);
+        long currentTime = System.currentTimeMillis() / 1000;
+        long newExpiry;
+        
+        if (data.isActive()) {
+            // 如果当前有保护，增加时长
+            newExpiry = data.getExpiryTime() + seconds;
+        } else {
+            // 如果当前无保护，从现在开始计时
+            newExpiry = currentTime + seconds;
+        }
+        
+        data.setExpiryTime(newExpiry);
+        plugin.savePlayerData(uuid);
+    }
+
+    private void removeProtectionDuration(UUID uuid, int seconds) {
+        PlayerData data = plugin.getPlayerData(uuid);
+        long currentTime = System.currentTimeMillis() / 1000;
+        
+        if (data.isActive()) {
+            // 只有当前有保护时才减少
+            long newExpiry = Math.max(currentTime, data.getExpiryTime() - seconds);
+            data.setExpiryTime(newExpiry);
+            plugin.savePlayerData(uuid);
+        }
+    }
+
+    private int parseDuration(String duration) {
+        // 示例: 1d, 7h, 30m, 60s
+        if (duration.isEmpty()) {
+            throw new IllegalArgumentException("持续时间不能为空");
+        }
+        
+        char unit = duration.charAt(duration.length() - 1);
+        String numStr = duration.substring(0, duration.length() - 1);
+        
+        try {
+            int value = Integer.parseInt(numStr);
+            switch (unit) {
+                case 'd': return value * 86400;
+                case 'h': return value * 3600;
+                case 'm': return value * 60;
+                case 's': return value;
+                default:
+                    // 尝试直接解析数字（秒）
+                    return Integer.parseInt(duration);
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("无效的持续时间格式");
+        }
+    }
+
+    private String formatDuration(int seconds) {
+        if (seconds >= 86400 && seconds % 86400 == 0) {
+            return (seconds / 86400) + "天";
+        } else if (seconds >= 3600 && seconds % 3600 == 0) {
+            return (seconds / 3600) + "小时";
+        } else if (seconds >= 60 && seconds % 60 == 0) {
+            return (seconds / 60) + "分钟";
+        } else {
+            return seconds + "秒";
         }
     }
 

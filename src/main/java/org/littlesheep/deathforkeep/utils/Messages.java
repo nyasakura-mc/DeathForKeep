@@ -8,7 +8,9 @@ import org.littlesheep.deathforkeep.DeathForKeep;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Messages {
@@ -111,5 +113,13 @@ public class Messages {
     
     public String getPrefix() {
         return prefix;
+    }
+    
+    public List<String> getMessageList(String key) {
+        if (!langConfig.contains(key)) {
+            plugin.getLogger().warning("找不到语言键: " + key);
+            return new ArrayList<>();
+        }
+        return langConfig.getStringList(key);
     }
 } 

@@ -350,4 +350,16 @@ public final class DeathForKeep extends JavaPlugin {
         playerDataMap = databaseManager.loadAllPlayerData();
         colorLogger.logReload();
     }
+
+    public void savePlayerData(UUID uuid) {
+        PlayerData data = playerDataMap.get(uuid);
+        if (data != null) {
+            databaseManager.savePlayerData(
+                uuid, 
+                data.getExpiryTime(), 
+                data.isParticlesEnabled(), 
+                data.getSharedWith()
+            );
+        }
+    }
 }
