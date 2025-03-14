@@ -172,18 +172,18 @@ gui:
 
   buy:
     title: "&6选择保护时长"
-    one-day: "&a1天"
+    one-day: "&a1天保护"
     one-day-lore: |
-      &7价格: &e%price% &7金币
-      &7点击购买
-    seven-days: "&a7天"
+      &7价格: &6%price% 金币
+      &7点击购买1天保护
+    seven-days: "&a7天保护"
     seven-days-lore: |
-      &7价格: &e%price% &7金币
-      &7点击购买
-    thirty-days: "&a30天"
+      &7价格: &6%price% 金币
+      &7点击购买7天保护
+    thirty-days: "&a30天保护"
     thirty-days-lore: |
-      &7价格: &e%price% &7金币
-      &7点击购买
+      &7价格: &6%price% 金币
+      &7点击购买30天保护
     click-to-buy: "&7点击购买"
     back: "&c返回"
     back-lore: "&7返回主菜单"

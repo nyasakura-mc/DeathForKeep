@@ -328,9 +328,13 @@ public class GUIManager implements Listener {
         if (!openInventories.containsKey(playerUUID)) return;
         
         event.setCancelled(true);
+        if (event.getRawSlot() < 0) return; // 防止点击界面外
         
         GUIType guiType = openInventories.get(playerUUID);
         int slot = event.getRawSlot();
+        
+        // 确保点击的是有效槽位
+        if (slot >= event.getInventory().getSize()) return;
         
         switch (guiType) {
             case MAIN_MENU:
@@ -359,40 +363,28 @@ public class GUIManager implements Listener {
     }
     
     private void handleMainMenuClick(Player player, int slot) {
-        switch (slot) {
-            case 11: // 购买保护
-                openDurationMenu(player);
-                break;
-            case 13: // 粒子效果
-                toggleParticles(player);
-                openMainMenu(player);
-                break;
-            case 15: // 帮助
-                player.closeInventory();
-                player.performCommand("dk help");
-                break;
-            case 22: // 管理员
-                if (player.hasPermission("deathkeep.admin")) {
-                    openAdminMenu(player);
-                }
-                break;
+        if (slot == 11) { // 购买保护
+            openDurationMenu(player);
+        } else if (slot == 13) { // 粒子效果
+            toggleParticles(player);
+            openMainMenu(player);
+        } else if (slot == 15) { // 帮助
+            player.closeInventory();
+            player.performCommand("dk help");
+        } else if (slot == 22 && player.hasPermission("deathkeep.admin")) { // 管理员
+            openAdminMenu(player);
         }
     }
     
     private void handleDurationMenuClick(Player player, int slot) {
-        switch (slot) {
-            case 11: // 1天
-                confirmPurchase(player, 1);
-                break;
-            case 13: // 7天
-                confirmPurchase(player, 7);
-                break;
-            case 15: // 30天
-                confirmPurchase(player, 30);
-                break;
-            case 22: // 返回
-                openMainMenu(player);
-                break;
+        if (slot == 11) { // 1天
+            confirmPurchase(player, 1);
+        } else if (slot == 13) { // 7天
+            confirmPurchase(player, 7);
+        } else if (slot == 15) { // 30天
+            confirmPurchase(player, 30);
+        } else if (slot == 22) { // 返回
+            openMainMenu(player);
         }
     }
     
