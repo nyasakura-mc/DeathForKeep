@@ -8,10 +8,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.metadata.MetadataValue;
 import org.littlesheep.deathforkeep.DeathForKeep;
-import org.littlesheep.deathforkeep.utils.Messages;
 
 import java.util.List;
-import java.util.UUID;
 
 public class ChatListener implements Listener {
     

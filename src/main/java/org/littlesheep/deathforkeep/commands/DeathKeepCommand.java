@@ -178,21 +178,31 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
         long currentTime = System.currentTimeMillis() / 1000;
         long newExpiry;
         
-        if (data.isActive()) {
+        if (data == null) {
+            // 如果玩家数据不存在，创建新的数据
+            data = new PlayerData(uuid, currentTime + seconds, true, null);
+            plugin.getPlayerDataMap().put(uuid, data);
+        } else if (data.isActive()) {
             // 如果当前有保护，增加时长
             newExpiry = data.getExpiryTime() + seconds;
+            data.setExpiryTime(newExpiry);
         } else {
             // 如果当前无保护，从现在开始计时
             newExpiry = currentTime + seconds;
+            data.setExpiryTime(newExpiry);
         }
         
-        data.setExpiryTime(newExpiry);
         plugin.savePlayerData(uuid);
     }
 
     private void removeProtectionDuration(UUID uuid, int seconds) {
         PlayerData data = plugin.getPlayerData(uuid);
         long currentTime = System.currentTimeMillis() / 1000;
+        
+        if (data == null) {
+            // 如果玩家数据不存在，跳过
+            return;
+        }
         
         if (data.isActive()) {
             // 只有当前有保护时才减少

@@ -22,22 +22,6 @@ command:
   error: "&c执行命令时发生错误。"
   invalid-duration: "&c请输入有效的天数（整数）。"
 
-  help:
-    header: "&6===== DeathForKeep 帮助 ====="
-    buy: "&e/deathkeep buy [时间] &7- 购买死亡物品保护"
-    check: "&e/deathkeep check &7- 查看你的保护状态"
-    check-others: "&e/deathkeep check <玩家> &7- 查看其他玩家的保护状态"
-    add: "&e/deathkeep add <玩家> <时间> &7- 为玩家添加保护"
-    remove: "&e/deathkeep remove <玩家> &7- 移除玩家的保护"
-    reload: "&e/deathkeep reload &7- 重新加载插件配置"
-    particles: "&e/deathkeep particles &7- 切换死亡粒子效果"
-    share: "&e/deathkeep share <玩家> &7- 与其他玩家共享你的保护"
-    find: "&e/deathkeep find <玩家> &7- 查找玩家的保护详情"
-    resetall: "&e/deathkeep resetall &7- 重置所有玩家数据"
-    gui: "&e/deathkeep gui &7- 打开图形界面"
-    time-format: "&7时间格式: 1d (1天), 12h (12小时), 30m (30分钟)"
-    footer: "&6================================"
-
   buy:
     invalid-time: "&c无效的时间格式！请使用 1d (1天), 12h (12小时), 30m (30分钟) 等格式。"
     not-enough-money: "&c你没有足够的金钱！你需要 %price% 金币。"
@@ -117,6 +101,14 @@ command:
     success: "&a所有玩家数据已重置。"
     cancelled: "&c重置操作已取消。"
 
+  bulk:
+    usage: "&c用法: /dk bulk <add|remove> <时长> <玩家列表>"
+    invalid-operation: "&c无效的操作，请使用 add 或 remove"
+    no-players-found: "&c未找到有效玩家"
+    add-success: "&a成功为 %count% 名玩家增加了 %duration% 的保护时长"
+    remove-success: "&a成功为 %count% 名玩家减少了 %duration% 的保护时长"
+    failed-players: "&c以下玩家未找到: %players%"
+
 death:
   protected: "&a你的物品已受到保护！"
   not-protected: "&c你的物品已掉落！"
@@ -155,12 +147,13 @@ gui:
     help-lore: |
       &7点击查看帮助
       &7包含所有命令说明
-    status: "&b保护状态"
+    status: "&f保护状态"
     status-lore: |
-      &7状态: %status%
-      &7到期时间: &e%time%
-      &7粒子效果: %particles%
-      &7共享状态: %share_status%
+      &7当前状态: %status%
+      &7剩余时间: %time%
+    status-active: "&a已激活"
+    status-inactive: "&c未激活"
+    status-expired: "&c已过期"
     share: "&d共享保护"
     share-lore: |
       &7与其他玩家共享你的保护
@@ -308,10 +301,10 @@ commands:
   help:
     title: "&6=== DeathKeep 帮助 ==="
     lines:
-      - "&a/dk buy &7- 打开购买菜单"
+      - "&a/dk buy [天数] &7- 购买指定时间的掉落保护"
       - "&a/dk gui &7- 打开图形界面"
       - "&a/dk help &7- 查看帮助"
-      - "&a/dk particles &7- 开关死亡粒子效果"
+      - "&a/dk particles &7- 开关死亡掉落效果"
       - "&c/dk bulk add <时长> <玩家> &7- 批量增加时长（管理员）"
       - "&c/dk bulk remove <时长> <玩家> &7- 批量减少时长（管理员）"
       - "&c/dk resetall &7- 重置所有数据（管理员）"
@@ -322,10 +315,3 @@ commands:
       - "&c/dk remove <玩家> &7- 移除玩家的保护"
       - "&c/dk reload &7- 重新加载插件配置"
       - "&c/dk resetall &7- 重置所有数据（管理员）"
-  bulk:
-    usage: "&c用法: /dk bulk <add|remove> <时长> <玩家列表>"
-    invalid-operation: "&c无效的操作，请使用 add 或 remove"
-    no-players-found: "&c未找到有效玩家"
-    add-success: "&a成功为 %count% 名玩家增加了 %duration% 的保护时长"
-    remove-success: "&a成功为 %count% 名玩家减少了 %duration% 的保护时长"
-    failed-players: "&c以下玩家未找到: %players%" 

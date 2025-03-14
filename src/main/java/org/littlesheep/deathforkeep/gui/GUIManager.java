@@ -6,7 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -65,8 +64,39 @@ public class GUIManager implements Listener {
                         .split("\n")));
         inventory.setItem(11, buyItem);
         
+        // 添加保护状态信息
+        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        boolean hasProtection = playerData != null && playerData.isActive();
+        String timeLeft = "";
+        
+        if (hasProtection) {
+            long currentTime = System.currentTimeMillis() / 1000;
+            @SuppressWarnings("null")
+            long expiryTime = playerData.getExpiryTime();
+            long secondsLeft = expiryTime - currentTime;
+            
+            if (secondsLeft > 0) {
+                timeLeft = formatTime(secondsLeft);
+            } else {
+                timeLeft = messages.getMessage("gui.main.status-expired");
+            }
+        }
+        
+        Material statusMaterial = hasProtection ? Material.TOTEM_OF_UNDYING : Material.BARRIER;
+        String statusTitle = messages.getMessage("gui.main.status");
+        List<String> statusLore = Arrays.asList(
+                messages.getMessage("gui.main.status-lore")
+                        .replace("%status%", hasProtection ? 
+                                messages.getMessage("gui.main.status-active") : 
+                                messages.getMessage("gui.main.status-inactive"))
+                        .replace("%time%", timeLeft)
+                        .split("\n"));
+        
+        ItemStack statusItem = createItem(player, statusMaterial, statusTitle, statusLore);
+        inventory.setItem(4, statusItem);
+        
         // 粒子效果按钮
-        boolean particlesEnabled = plugin.getPlayerData(player.getUniqueId()).isParticlesEnabled();
+        boolean particlesEnabled = playerData != null && playerData.isParticlesEnabled();
         ItemStack particlesItem = createItem(player, Material.BLAZE_POWDER, 
                 messages.getMessage("gui.main.particles"), 
                 Arrays.asList(messages.getMessage("gui.main.particles-lore")
@@ -91,11 +121,7 @@ public class GUIManager implements Listener {
         }
         
         player.openInventory(inventory);
-        // 在打开后设置状态
         openInventories.put(player.getUniqueId(), GUIType.MAIN_MENU);
-        
-        // 调试日志
-        plugin.getLogger().info("为玩家 " + player.getName() + " 打开主菜单，GUI类型已设置为: " + GUIType.MAIN_MENU);
     }
     
     public void openDurationMenu(Player player) {
@@ -145,9 +171,6 @@ public class GUIManager implements Listener {
             player.openInventory(inventory);
             // 在打开后设置状态
             openInventories.put(player.getUniqueId(), GUIType.DURATION_MENU);
-            
-            // 调试日志
-            plugin.getLogger().info("为玩家 " + player.getName() + " 打开时长选择菜单，GUI类型已设置为: " + GUIType.DURATION_MENU);
         }, 1L); // 1 tick 延迟
     }
     
@@ -357,50 +380,51 @@ public class GUIManager implements Listener {
         openInventories.put(player.getUniqueId(), GUIType.ADMIN_BATCH_ACTIONS);
     }
     
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        
-        Player player = (Player) event.getWhoClicked();
-        UUID playerUUID = player.getUniqueId();
-        
-        if (!openInventories.containsKey(playerUUID)) {
+        if (!(event.getWhoClicked() instanceof Player)) {
             return;
         }
         
-        // 添加点击冷却检查
-        long currentTime = System.currentTimeMillis();
-        if (lastClickTime.containsKey(playerUUID)) {
-            long lastClick = lastClickTime.get(playerUUID);
-            if (currentTime - lastClick < CLICK_COOLDOWN) {
-                event.setCancelled(true);
-                return;
-            }
+        Player player = (Player) event.getWhoClicked();
+        UUID uuid = player.getUniqueId();
+        
+        if (!openInventories.containsKey(uuid)) {
+            return;
         }
-        lastClickTime.put(playerUUID, currentTime);
         
         event.setCancelled(true);
-        if (event.getRawSlot() < 0) return;
         
-        GUIType guiType = openInventories.get(playerUUID);
+        // 防止快速点击
+        long now = System.currentTimeMillis();
+        if (lastClickTime.containsKey(uuid) && now - lastClickTime.get(uuid) < CLICK_COOLDOWN) {
+            return;
+        }
+        lastClickTime.put(uuid, now);
+        
         int slot = event.getRawSlot();
+        if (slot < 0) {
+            return;
+        }
         
-        // 调试日志
-        plugin.getLogger().info("玩家 " + player.getName() + " 点击了GUI，类型: " + guiType + "，槽位: " + slot);
+        GUIType type = openInventories.get(uuid);
         
-        // 确保点击的是有效槽位
-        if (slot >= event.getInventory().getSize()) return;
-        
-        if (guiType == GUIType.MAIN_MENU) {
-            handleMainMenuClick(player, slot);
-        } else if (guiType == GUIType.DURATION_MENU) {
-            handleDurationMenuClick(player, slot);
-        } else if (guiType == GUIType.ADMIN_MENU) {
-            handleAdminMenuClick(player, slot);
-        } else if (guiType == GUIType.ADMIN_PLAYER_LIST) {
-            handlePlayerListClick(player, slot);
-        } else if (guiType == GUIType.ADMIN_BATCH_ACTIONS) {
-            handleBatchActionsClick(player, slot);
+        switch (type) {
+            case MAIN_MENU:
+                handleMainMenuClick(player, slot);
+                break;
+            case DURATION_MENU:
+                handleDurationMenuClick(player, slot);
+                break;
+            case ADMIN_MENU:
+                handleAdminMenuClick(player, slot);
+                break;
+            case ADMIN_PLAYER_LIST:
+                handlePlayerListClick(player, slot);
+                break;
+            case ADMIN_BATCH_ACTIONS:
+                handleBatchActionsClick(player, slot);
+                break;
         }
     }
     
@@ -412,10 +436,7 @@ public class GUIManager implements Listener {
     }
     
     private void handleMainMenuClick(Player player, int slot) {
-        plugin.getLogger().info("处理主菜单点击事件，槽位: " + slot);
-        
         if (slot == 11) { // 购买保护
-            plugin.getLogger().info("玩家点击了购买保护按钮，打开时长选择菜单");
             openDurationMenu(player);
         } else if (slot == 13) { // 粒子效果
             toggleParticles(player);
@@ -429,8 +450,6 @@ public class GUIManager implements Listener {
     }
     
     private void handleDurationMenuClick(Player player, int slot) {
-        plugin.getLogger().info("处理时长选择菜单点击事件，槽位: " + slot);
-        
         if (slot == 11) { // 1天
             confirmPurchase(player, 1);
         } else if (slot == 13) { // 7天
@@ -623,5 +642,30 @@ public class GUIManager implements Listener {
             item.setItemMeta(meta);
         }
         return item;
+    }
+    
+    private String formatTime(long seconds) {
+        if (seconds < 60) {
+            return seconds + "秒";
+        }
+        
+        long minutes = seconds / 60;
+        if (minutes < 60) {
+            return minutes + "分钟";
+        }
+        
+        long hours = minutes / 60;
+        if (hours < 24) {
+            return hours + "小时";
+        }
+        
+        long days = hours / 24;
+        hours = hours % 24;
+        
+        if (hours == 0) {
+            return days + "天";
+        } else {
+            return days + "天" + hours + "小时";
+        }
     }
 } 
