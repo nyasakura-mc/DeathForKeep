@@ -1,0 +1,32 @@
+name: DeathForKeep
+version: '${project.version}'
+main: org.littlesheep.deathforkeep.DeathForKeep
+api-version: '1.20'
+depend: [Vault]
+softdepend: [PlaceholderAPI, Vault]
+commands:
+  deathkeep:
+    description: 死亡物品保护命令
+    usage: /deathkeep [buy|check|add|remove|reload|particles|share|find|resetall|gui]
+    aliases: [dk]
+permissions:
+  deathkeep.buy:
+    description: 允许玩家购买死亡物品保护
+    default: true
+  deathkeep.check:
+    description: 允许玩家查看自己的保护状态
+    default: true
+  deathkeep.check.others:
+    description: 允许玩家查看其他玩家的保护状态
+    default: op
+  deathkeep.particles:
+    description: 允许玩家切换粒子效果
+    default: true
+  deathkeep.share:
+    description: 允许玩家共享保护
+    default: true
+  deathkeep.admin:
+    description: 允许管理员管理插件
+    default: op
+    children:
+      deathkeep.check.others: true

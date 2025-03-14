@@ -1,0 +1,290 @@
+# DeathForKeep 中文语言文件
+version: 2
+
+general:
+  prefix: "&6[死亡保护] &r"
+
+plugin:
+  enabled: "DeathForKeep 插件已启用！"
+  disabled: "DeathForKeep 插件已禁用！"
+  reloaded: "DeathForKeep 插件已重新加载！"
+  update-available: "&a发现新版本 v%version%！\n&a下载地址: %download%"
+
+economy:
+  not-found: "未找到Vault经济系统！插件将被禁用。"
+
+command:
+  player-only: "&c此命令只能由玩家使用！"
+  no-permission: "&c你没有权限使用此命令！"
+  player-not-found: "&c找不到玩家 %player%！"
+  unknown: "&c未知命令。输入 /deathkeep help 获取帮助。"
+
+  help:
+    header: "&6===== DeathForKeep 帮助 ====="
+    buy: "&e/deathkeep buy [时间] &7- 购买死亡物品保护"
+    check: "&e/deathkeep check &7- 查看你的保护状态"
+    check-others: "&e/deathkeep check <玩家> &7- 查看其他玩家的保护状态"
+    add: "&e/deathkeep add <玩家> <时间> &7- 为玩家添加保护"
+    remove: "&e/deathkeep remove <玩家> &7- 移除玩家的保护"
+    reload: "&e/deathkeep reload &7- 重新加载插件配置"
+    particles: "&e/deathkeep particles &7- 切换死亡粒子效果"
+    share: "&e/deathkeep share <玩家> &7- 与其他玩家共享你的保护"
+    find: "&e/deathkeep find <玩家> &7- 查找玩家的保护详情"
+    resetall: "&e/deathkeep resetall &7- 重置所有玩家数据"
+    gui: "&e/deathkeep gui &7- 打开图形界面"
+    time-format: "&7时间格式: 1d (1天), 12h (12小时), 30m (30分钟)"
+    footer: "&6================================"
+
+  buy:
+    invalid-time: "&c无效的时间格式！请使用 1d (1天), 12h (12小时), 30m (30分钟) 等格式。"
+    not-enough-money: "&c你没有足够的金钱！你需要 %price% 金币。"
+    success: "&a你已成功购买 %days% 的死亡物品保护，花费 %price% 金币！"
+    world-price: "&7在当前世界购买保护的价格为: &e%price% &7金币/天"
+
+  check:
+    specify-player: "&c请指定一个玩家名称！"
+    active: "&a%player% 的死亡物品保护将于 %time% 到期。"
+    expired: "&c%player% 的死亡物品保护已过期。"
+    no-protection: "&c%player% 没有死亡物品保护。"
+    particles-enabled: "&a粒子效果已启用。"
+    particles-disabled: "&c粒子效果已禁用。"
+    shared-with: "&a保护已与 %player% 共享。"
+    shared-from: "&a你正在使用来自 %player% 的共享保护。"
+
+  add:
+    usage: "&c用法: /deathkeep add <玩家> <时间>"
+    invalid-time: "&c无效的时间格式！请使用 1d (1天), 12h (12小时), 30m (30分钟) 等格式。"
+    success: "&a你已为 %player% 添加 %days% 的死亡物品保护。"
+    notify: "&a管理员已为你添加 %days% 的死亡物品保护。"
+    extended: "&a已为 %player% 延长保护时间 %days%。"
+
+  remove:
+    usage: "&c用法: /deathkeep remove <玩家>"
+    success: "&a你已移除 %player% 的死亡物品保护。"
+    notify: "&c你的死亡物品保护已被管理员移除。"
+    no-protection: "&c该玩家没有有效的保护可以移除。"
+
+  reload:
+    success: "&aDeathForKeep 配置已重新加载！"
+    error: "&c重新加载配置时发生错误，请检查控制台。"
+
+  particles:
+    enabled: "&a粒子效果已启用！"
+    disabled: "&c粒子效果已禁用！"
+    toggle: "&7粒子效果已%status%"
+
+  share:
+    usage: "&c用法: /deathkeep share <玩家>"
+    self: "&c你不能与自己共享保护！"
+    no-protection: "&c你没有有效的保护可以共享！"
+    already-shared: "&c你已经在与 %player% 共享你的保护！"
+    success: "&a你现在正在与 %player% 共享你的保护！"
+    notify: "&a%player% 现在正在与你共享他们的死亡物品保护！"
+    request-sent: "&a已向 %player% 发送共享请求，手续费: %fee% 金币。"
+    request-received: "&a%player% 想要与你共享他们的死亡物品保护。请选择是否接受。"
+    request-expired: "&c向 %player% 发送的共享请求已过期。"
+    request-expired-target: "&c来自 %player% 的共享请求已过期。"
+    no-pending-request: "&c你没有待处理的共享请求。"
+    not-enough-money: "&c你没有足够的金钱支付手续费！需要 %fee% 金币。"
+    accepted: "&a你已接受 %player% 的共享请求。"
+    accepted-sender: "&a%player% 已接受你的共享请求。"
+    denied-target: "&c你已拒绝共享请求。"
+    denied-sender: "&c%player% 拒绝了你的共享请求。"
+    sender-offline: "&c请求发送者已离线。"
+    protection-expired: "&c请求发送者的保护已过期。"
+    protection-expired-sender: "&c你的保护已过期，无法完成共享。"
+    confirm-title: "&6确认共享请求 - %player%"
+    confirm-accept: "&a接受"
+    confirm-deny: "&c拒绝"
+    success-target: "&a你现在正在接收来自 %player% 的死亡物品保护！"
+    fee-info: "&7共享手续费: &e%fee% &7金币 (%percentage%%)"
+
+  find:
+    usage: "&c用法: /deathkeep find <玩家>"
+    result: "&a玩家 %player% 的保护信息:"
+    status: "&7状态: %status%"
+    expiry: "&7到期时间: &e%time%"
+    shared-with: "&7共享给: &e%player%"
+    shared-from: "&7共享自: &e%player%"
+    particles: "&7粒子效果: %status%"
+    world-price: "&7当前世界价格: &e%price% &7金币/天"
+
+  resetall:
+    confirm: "&c警告: 这将重置所有玩家的数据。输入 /deathkeep resetall confirm 确认。"
+    success: "&a所有玩家数据已重置。"
+    cancelled: "&c重置操作已取消。"
+
+death:
+  protected: "&a你的物品已受到保护！"
+  not-protected: "&c你的物品已掉落！"
+  broadcast: "&e%player% 死亡了，但物品受到了保护！"
+  shared-protected: "&a你的物品受到了来自 %player% 的共享保护！"
+
+bossbar:
+  hour: "&e你的死亡物品保护将在 1 小时后到期"
+  ten-minutes: "&c你的死亡物品保护将在 10 分钟后到期"
+  expired: "&c你的死亡物品保护已到期"
+  shared-hour: "&e来自 %player% 的共享保护将在 1 小时后到期"
+  shared-ten-minutes: "&c来自 %player% 的共享保护将在 10 分钟后到期"
+  shared-expired: "&c来自 %player% 的共享保护已到期"
+
+time:
+  days: "%d 天"
+  hours: "%d 小时"
+  minutes: "%d 分钟"
+  seconds: "%d 秒"
+  expired: "已过期"
+  permanent: "永久"
+  format: "%days%%hours%%minutes%%seconds%"
+  
+gui:
+  main:
+    title: "&6死亡物品保护"
+    buy: "&a购买保护"
+    buy-lore: |
+      &7点击进入购买界面
+      &7基础价格: &e%price% &7金币/天
+    particles: "&b粒子效果"
+    particles-lore: |
+      &7当前状态: %status%
+      &7点击切换
+    help: "&e帮助信息"
+    help-lore: |
+      &7点击查看帮助
+      &7包含所有命令说明
+    status: "&b保护状态"
+    status-lore: |
+      &7状态: %status%
+      &7到期时间: &e%time%
+      &7粒子效果: %particles%
+      &7共享状态: %share_status%
+    share: "&d共享保护"
+    share-lore: |
+      &7与其他玩家共享你的保护
+      &7手续费: &e%fee%% &7的保护价值
+      &7点击选择玩家
+    admin: "&c管理员面板"
+    admin-lore: "&7管理所有玩家的保护"
+    settings: "&e设置"
+    settings-lore: "&7调整个人设置"
+
+  buy:
+    title: "&6选择保护时长"
+    one-day: "&a1天"
+    one-day-lore: |
+      &7价格: &e%price% &7金币
+      &7点击购买
+    seven-days: "&a7天"
+    seven-days-lore: |
+      &7价格: &e%price% &7金币
+      &7点击购买
+    thirty-days: "&a30天"
+    thirty-days-lore: |
+      &7价格: &e%price% &7金币
+      &7点击购买
+    click-to-buy: "&7点击购买"
+    back: "&c返回"
+    back-lore: "&7返回主菜单"
+    custom: "&a自定义时间"
+    custom-lore: |
+      &7点击输入自定义时间
+      &7支持格式: 1d, 12h, 30m
+    confirm-title: "&6确认购买"
+    confirm-lore: |
+      &7时长: &e%time%
+      &7价格: &e%price% &7金币
+      &7点击确认购买
+    custom-message: "&a请在聊天框中输入想要购买的天数"
+
+  admin-menu:
+    title: "&6死亡物品保护 - 管理员面板"
+    player-list: "&b玩家列表"
+    player-list-lore: "&7查看所有玩家的保护状态"
+    batch-actions: "&a批量操作"
+    batch-actions-lore: "&7对多个玩家执行批量操作"
+    reload: "&d重新加载配置"
+    reload-lore: "&7重新加载插件配置"
+    reset-all: "&c重置所有数据"
+    reset-all-lore: "&7重置所有玩家数据"
+    back: "&c返回"
+    back-lore: "&7返回主菜单"
+
+  player-list:
+    title: "&6玩家列表 - 第 %page% 页"
+    player-name: "&a玩家: %player%"
+    expires: "&7到期时间: &e%time%"
+    shared-with: "&7共享给: &e%player%"
+    particles: "&7粒子效果: %status%"
+    add-protection: "&a添加保护"
+    add-protection-lore: "&7为此玩家添加保护"
+    remove-protection: "&c移除保护"
+    remove-protection-lore: "&7移除此玩家的保护"
+    previous-page: "&e上一页"
+    next-page: "&e下一页"
+    back: "&c返回"
+    back-lore: "&7返回管理员面板"
+    search: "&f搜索玩家"
+    search-lore: "&7点击输入玩家名称"
+
+  batch-actions:
+    title: "&6死亡物品保护 - 批量操作"
+    player-name: "&b%player%"
+    selected: "&a已选择"
+    not-selected: "&c未选择"
+    click-to-toggle: "&7点击切换选择状态"
+    add-protection: "&a批量添加保护"
+    add-protection-lore: "&7为所有选中的玩家添加保护"
+    remove-protection: "&c批量移除保护"
+    remove-protection-lore: "&7移除所有选中玩家的保护"
+    enter-days: "&a请在聊天中输入要添加的天数"
+    no-selection: "&c你没有选择任何玩家！"
+    removed: "&a已移除 %count% 个玩家的保护"
+    added: "&a已为 %count% 个玩家添加保护"
+    select-all: "&a全选"
+    select-all-lore: "&7选择所有玩家"
+    deselect-all: "&c取消全选"
+    deselect-all-lore: "&7取消选择所有玩家"
+
+  settings:
+    title: "&6死亡物品保护 - 设置"
+    particles: "&b粒子效果"
+    particles-lore: |
+      &7当前状态: %status%
+      &7点击切换
+    notifications: "&e通知设置"
+    notifications-lore: |
+      &7到期提醒: %expiry%
+      &7BossBar 提示: %bossbar%
+      &7点击切换
+    back: "&c返回"
+    back-lore: "&7返回主菜单"
+
+  common:
+    back: "&c返回"
+    back-lore: "&7返回上一菜单"
+    enabled: "&a已启用"
+    disabled: "&c已禁用"
+    confirm: "&a确认"
+    cancel: "&c取消"
+    previous-page: "&e上一页"
+    next-page: "&e下一页"
+    click-to-toggle: "&7点击切换"
+
+placeholder:
+  time: "%time%"
+  no-protection: "无保护"
+  status-active: "激活"
+  status-expired: "过期"
+  status-none: "无"
+  shared-with: "共享给 %player%"
+  shared-from: "来自 %player%"
+  not-shared: "未共享"
+
+database:
+  connecting: "正在连接到数据库..."
+  connected: "数据库连接成功！"
+  error: "数据库连接失败: %error%"
+  saving: "正在保存数据..."
+  saved: "数据保存完成！"
+  loading: "正在加载数据..."
+  loaded: "数据加载完成！" 

@@ -1,0 +1,53 @@
+# DeathForKeep 配置文件
+config-version: 3
+
+# 语言设置 (支持: zh-CN, en)
+language: zh-CN
+
+# 价格设置 (按天计算)
+prices:
+  1d: 100
+  7d: 500
+  30d: 2000
+
+# 死亡设置
+broadcast-range: world  # 广播范围: world, server, none
+
+# 粒子效果设置
+particles:
+  enabled-by-default: true
+  type: TOTEM  # 粒子类型: TOTEM, HEART, FLAME, PORTAL, EXPLOSION_NORMAL
+  count: 50    # 粒子数量
+  share-effect: true  # 共享成功时是否显示粒子效果
+
+# BossBar 设置
+bossbar:
+  enabled: true
+  hour-color: YELLOW
+  ten-minute-color: RED
+  expiry-color: RED
+
+# 共享设置
+share:
+  fee-percentage: 10.0  # 共享手续费百分比 (0 表示无手续费)
+  require-confirmation: true  # 是否需要接收方确认
+
+# bStats 统计设置
+bstats:
+  enabled: true
+
+# 更新检查设置
+update-checker:
+  enabled: true
+  notify-admins: true
+  
+# 数据库设置
+database:
+  type: sqlite  # 数据库类型: sqlite, mysql
+  mysql:
+    host: localhost
+    port: 3306
+    database: deathforkeep
+    username: root
+    password: password
+    ssl: false 

@@ -1,0 +1,93 @@
+package org.littlesheep.deathforkeep.listeners;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.littlesheep.deathforkeep.DeathForKeep;
+import org.littlesheep.deathforkeep.utils.Messages;
+
+import java.util.UUID;
+
+public class DeathListener implements Listener {
+
+    private final DeathForKeep plugin;
+
+    public DeathListener(DeathForKeep plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID playerUUID = player.getUniqueId();
+        Messages messages = plugin.getMessages();
+        
+        if (plugin.hasActiveProtection(playerUUID)) {
+            // 阻止物品掉落
+            event.setKeepInventory(true);
+            // 阻止经验掉落
+            event.setKeepLevel(true);
+            event.setDroppedExp(0);
+            
+            // 发送消息给玩家
+            player.sendMessage(messages.getMessage("death.protected"));
+            
+            // 播放粒子效果
+            if (plugin.areParticlesEnabled(playerUUID)) {
+                playDeathParticles(player.getLocation());
+            }
+            
+            // 广播消息
+            broadcastDeathProtection(player);
+        }
+    }
+    
+    private void playDeathParticles(Location location) {
+        String particleType = plugin.getConfig().getString("particles.type", "TOTEM");
+        int count = plugin.getConfig().getInt("particles.count", 50);
+        double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.5);
+        double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.0);
+        double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.5);
+        double speed = plugin.getConfig().getDouble("particles.speed", 0.1);
+        
+        try {
+            Particle particle = Particle.valueOf(particleType);
+            location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("无效的粒子类型: " + particleType + "，使用默认TOTEM");
+            location.getWorld().spawnParticle(Particle.TOTEM, location, count, offsetX, offsetY, offsetZ, speed);
+        }
+    }
+    
+    private void broadcastDeathProtection(Player player) {
+        String broadcastRange = plugin.getConfig().getString("broadcast-range", "world");
+        Messages messages = plugin.getMessages();
+        String message = messages.getMessage("death.broadcast", "player", player.getName());
+        
+        if ("server".equalsIgnoreCase(broadcastRange)) {
+            // 全服广播
+            Bukkit.broadcastMessage(message);
+        } else if ("world".equalsIgnoreCase(broadcastRange)) {
+            // 同世界广播
+            World world = player.getWorld();
+            for (Player p : world.getPlayers()) {
+                p.sendMessage(message);
+            }
+        } else if ("none".equalsIgnoreCase(broadcastRange)) {
+            // 不广播
+            return;
+        } else {
+            // 默认同世界广播
+            World world = player.getWorld();
+            for (Player p : world.getPlayers()) {
+                p.sendMessage(message);
+            }
+        }
+    }
+} 
