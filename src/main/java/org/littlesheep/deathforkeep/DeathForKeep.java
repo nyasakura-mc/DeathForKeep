@@ -185,16 +185,19 @@ public final class DeathForKeep extends JavaPlugin {
     public boolean hasActiveProtection(UUID playerUUID) {
         PlayerData data = playerDataMap.get(playerUUID);
         if (data != null && data.isActive()) {
+            colorLogger.info("玩家 " + playerUUID + " 有活跃的保护");
             return true;
         }
         
         // 检查是否有其他玩家与此玩家共享保护
         for (PlayerData otherData : playerDataMap.values()) {
             if (otherData.isActive() && playerUUID.equals(otherData.getSharedWith())) {
+                colorLogger.info("玩家 " + playerUUID + " 有来自其他玩家的共享保护");
                 return true;
             }
         }
         
+        colorLogger.info("玩家 " + playerUUID + " 没有保护");
         return false;
     }
     
@@ -205,20 +208,24 @@ public final class DeathForKeep extends JavaPlugin {
         if (data == null) {
             data = new PlayerData(playerUUID, 0, true, null);
             playerDataMap.put(playerUUID, data);
+            colorLogger.info("为玩家 " + playerUUID + " 创建了新的保护数据");
         }
         
         long expiryTime = data.getExpiryTime();
         // 如果已经过期，从当前时间开始计算
         if (expiryTime < currentTime) {
             expiryTime = currentTime;
+            colorLogger.info("玩家 " + playerUUID + " 的保护已过期，重新从当前时间计算");
         }
         
         // 添加新的持续时间
         expiryTime += durationInSeconds;
         data.setExpiryTime(expiryTime);
+        colorLogger.info("玩家 " + playerUUID + " 的保护到期时间设置为: " + expiryTime + "，当前时间: " + currentTime);
         
         // 保存到数据库
         databaseManager.savePlayerData(playerUUID, expiryTime, data.isParticlesEnabled(), data.getSharedWith());
+        colorLogger.info("已将玩家 " + playerUUID + " 的保护数据保存到数据库");
     }
     
     public void removeProtection(UUID playerUUID) {

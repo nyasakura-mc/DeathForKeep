@@ -28,12 +28,19 @@ public class DeathListener implements Listener {
         UUID playerUUID = player.getUniqueId();
         Messages messages = plugin.getMessages();
         
-        if (plugin.hasActiveProtection(playerUUID)) {
+        plugin.getLogger().info("玩家 " + player.getName() + " (" + playerUUID + ") 死亡，检查保护状态");
+        
+        boolean hasProtection = plugin.hasActiveProtection(playerUUID);
+        plugin.getLogger().info("玩家 " + player.getName() + " 的保护状态: " + hasProtection);
+        
+        if (hasProtection) {
             // 阻止物品掉落
             event.setKeepInventory(true);
             // 阻止经验掉落
             event.setKeepLevel(true);
             event.setDroppedExp(0);
+            
+            plugin.getLogger().info("玩家 " + player.getName() + " 的物品和经验保护生效");
             
             // 发送消息给玩家
             player.sendMessage(messages.getMessage("death.protected"));
@@ -41,10 +48,14 @@ public class DeathListener implements Listener {
             // 播放粒子效果
             if (plugin.getConfig().getBoolean("particles.on-protection-used", true)) {
                 spawnProtectionParticles(player.getLocation());
+                plugin.getLogger().info("为玩家 " + player.getName() + " 播放了保护粒子效果");
             }
             
             // 广播消息
             broadcastDeathProtection(player);
+            plugin.getLogger().info("广播了玩家 " + player.getName() + " 的死亡保护消息");
+        } else {
+            plugin.getLogger().info("玩家 " + player.getName() + " 没有活跃的保护，物品将掉落");
         }
     }
     
