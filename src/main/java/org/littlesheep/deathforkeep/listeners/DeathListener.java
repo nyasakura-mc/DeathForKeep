@@ -9,38 +9,103 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.utils.Messages;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class DeathListener implements Listener {
 
     private final DeathForKeep plugin;
+    // 用于存储玩家的物品备份
+    private final Map<UUID, ItemStack[]> inventoryBackups = new HashMap<>();
+    private final Map<UUID, ItemStack[]> armorBackups = new HashMap<>();
+    private final Map<UUID, Integer> expBackups = new HashMap<>();
 
     public DeathListener(DeathForKeep plugin) {
         this.plugin = plugin;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    // 在死亡事件的最早阶段备份物品
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onPlayerDeathEarly(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID playerUUID = player.getUniqueId();
+        
+        if (plugin.hasActiveProtection(playerUUID)) {
+            // 备份玩家物品和经验(如果启用了备份功能)
+            if (plugin.getConfig().getBoolean("use-inventory-backup", true)) {
+                inventoryBackups.put(playerUUID, player.getInventory().getContents().clone());
+                armorBackups.put(playerUUID, player.getInventory().getArmorContents().clone());
+                expBackups.put(playerUUID, player.getTotalExperience());
+            }
+            
+            // 尝试设置保持物品
+            event.setKeepInventory(true);
+            event.setKeepLevel(true);
+            event.setDroppedExp(0);
+            event.getDrops().clear();
+        }
+    }
+    
+    // 监听玩家重生事件，恢复物品
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        if (!plugin.getConfig().getBoolean("use-inventory-backup", true)) {
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+        
+        if (inventoryBackups.containsKey(playerUUID)) {
+            // 延迟1tick恢复物品，以确保在所有插件处理后执行
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) {
+                        // 恢复物品
+                        player.getInventory().setContents(inventoryBackups.get(playerUUID));
+                        player.getInventory().setArmorContents(armorBackups.get(playerUUID));
+                        
+                        // 恢复经验
+                        player.setTotalExperience(0);
+                        player.setLevel(0);
+                        player.setExp(0);
+                        player.giveExp(expBackups.get(playerUUID));
+                        
+                        // 更新物品栏
+                        player.updateInventory();
+                        
+                        // 清理备份数据
+                        inventoryBackups.remove(playerUUID);
+                        armorBackups.remove(playerUUID);
+                        expBackups.remove(playerUUID);
+                    }
+                }
+            }.runTaskLater(plugin, 1L);
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         UUID playerUUID = player.getUniqueId();
         Messages messages = plugin.getMessages();
         
-        plugin.getLogger().info("玩家 " + player.getName() + " (" + playerUUID + ") 死亡，检查保护状态");
-        
         boolean hasProtection = plugin.hasActiveProtection(playerUUID);
-        plugin.getLogger().info("玩家 " + player.getName() + " 的保护状态: " + hasProtection);
         
         if (hasProtection) {
-            // 阻止物品掉落
+            // 强制设置保持物品和经验
             event.setKeepInventory(true);
-            // 阻止经验掉落
             event.setKeepLevel(true);
             event.setDroppedExp(0);
-            
-            plugin.getLogger().info("玩家 " + player.getName() + " 的物品和经验保护生效");
+            event.getDrops().clear();
             
             // 发送消息给玩家
             player.sendMessage(messages.getMessage("death.protected"));
@@ -48,14 +113,17 @@ public class DeathListener implements Listener {
             // 播放粒子效果
             if (plugin.getConfig().getBoolean("particles.on-protection-used", true)) {
                 spawnProtectionParticles(player.getLocation());
-                plugin.getLogger().info("为玩家 " + player.getName() + " 播放了保护粒子效果");
             }
             
             // 广播消息
             broadcastDeathProtection(player);
-            plugin.getLogger().info("广播了玩家 " + player.getName() + " 的死亡保护消息");
-        } else {
-            plugin.getLogger().info("玩家 " + player.getName() + " 没有活跃的保护，物品将掉落");
+            
+            // 再次确认备份已存在
+            if (plugin.getConfig().getBoolean("use-inventory-backup", true) && !inventoryBackups.containsKey(playerUUID)) {
+                inventoryBackups.put(playerUUID, player.getInventory().getContents().clone());
+                armorBackups.put(playerUUID, player.getInventory().getArmorContents().clone());
+                expBackups.put(playerUUID, player.getTotalExperience());
+            }
         }
     }
     

@@ -12,6 +12,7 @@ prices:
 
 # 死亡设置
 broadcast-range: world  # 广播范围: world, server, none
+use-inventory-backup: true  # 开启物品备份恢复机制，解决与其他插件冲突导致的物品丢失
 
 # 粒子效果设置
 particles:
