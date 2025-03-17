@@ -18,28 +18,28 @@ use-inventory-backup: true  # 开启物品备份恢复机制，解决与其他�
 particles:
   enabled-by-default: true
   type: TOTEM  # 粒子类型: TOTEM, HEART, FLAME, PORTAL, EXPLOSION_NORMAL
-  count: 50    # 粒子数量
+  count: 80    # 粒子数量
   share-effect: true  # 共享成功时是否显示粒子效果
   on-protection-used: true
   status-change: true
   gain-protection: "TOTEM"
   lose-protection: "SMOKE_NORMAL"
-  offset-x: 0.5
-  offset-y: 1.0
-  offset-z: 0.5
-  speed: 0.1
+  offset-x: 0.8
+  offset-y: 1.5
+  offset-z: 0.8
+  speed: 0.2
   # 获取保护时显示粒子效果
   on-protection-gained:
     enabled: true
-    duration: 3  # 粒子持续显示秒数
+    duration: 5  # 粒子持续显示秒数
     type: "TOTEM"  # 粒子类型
-    count: 100    # 粒子数量
+    count: 200    # 粒子数量
   # 切换粒子状态时显示粒子效果
   on-toggle:
     enabled: true
-    duration: 2  # 粒子持续显示秒数
-    type: "TOTEM"  # 粒子类型
-    count: 80     # 粒子数量
+    duration: 4  # 粒子持续显示秒数
+    type: "FLAME"  # 粒子类型
+    count: 150     # 粒子数量
 
 # BossBar 设置
 bossbar:

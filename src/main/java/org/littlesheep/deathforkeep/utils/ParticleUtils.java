@@ -77,6 +77,10 @@ public class ParticleUtils {
         
         String particleType = plugin.getConfig().getString(configSection + ".type", "TOTEM");
         final int count = plugin.getConfig().getInt(configSection + ".count", 100);
+        final double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.8);
+        final double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.5);
+        final double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.8);
+        final double speed = plugin.getConfig().getDouble("particles.speed", 0.2);
         
         // 确定粒子类型
         Particle particleToUse;
@@ -88,6 +92,10 @@ public class ParticleUtils {
         
         // 使用final变量存储粒子类型，以便在匿名内部类中使用
         final Particle finalParticle = particleToUse;
+        
+        // 立即显示一次粒子爆发
+        Location initialLoc = player.getLocation().add(0, 1, 0);
+        player.getWorld().spawnParticle(finalParticle, initialLoc, count, offsetX, offsetY, offsetZ, speed);
         
         // 创建持续显示粒子的任务
         new BukkitRunnable() {
@@ -101,7 +109,24 @@ public class ParticleUtils {
                 }
                 
                 Location loc = player.getLocation().add(0, 1, 0);
-                player.getWorld().spawnParticle(finalParticle, loc, count / 20, 0.5, 0.5, 0.5, 0.1);
+                // 随着时间推移，逐渐减少粒子数量，制造渐隐效果
+                int currentCount = (int)(count / 20.0 * ((double)remainingTicks / (duration * 20.0) + 0.5));
+                player.getWorld().spawnParticle(finalParticle, loc, currentCount, offsetX, offsetY, offsetZ, speed);
+                
+                // 每5ticks产生一次环形粒子
+                if (remainingTicks % 5 == 0) {
+                    double radius = 1.0;
+                    for (int i = 0; i < 12; i++) {
+                        double angle = 2 * Math.PI * i / 12;
+                        Location circleLoc = loc.clone().add(
+                            radius * Math.cos(angle), 
+                            0.2, 
+                            radius * Math.sin(angle)
+                        );
+                        player.getWorld().spawnParticle(finalParticle, circleLoc, 2, 0.1, 0.1, 0.1, 0.05);
+                    }
+                }
+                
                 remainingTicks--;
             }
         }.runTaskTimer(plugin, 0L, 1L);
