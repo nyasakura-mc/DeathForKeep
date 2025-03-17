@@ -253,6 +253,19 @@ public final class DeathForKeep extends JavaPlugin {
         
         // 保存到数据库
         databaseManager.savePlayerData(playerUUID, expiryTime, data.isParticlesEnabled(), data.getSharedWith());
+        
+        // 如果玩家在线，显示粒子效果和BossBar
+        Player player = Bukkit.getPlayer(playerUUID);
+        if (player != null && player.isOnline()) {
+            // 显示粒子效果
+            if (getConfig().getBoolean("particles.on-protection-gained.enabled", true)) {
+                int duration = getConfig().getInt("particles.on-protection-gained.duration", 3);
+                org.littlesheep.deathforkeep.utils.ParticleUtils.playProtectionGainedEffect(this, player, duration);
+            }
+            
+            // 显示BossBar
+            bossBarManager.showProtectionGainedMessage(player, expiryTime);
+        }
     }
     
     public void removeProtection(UUID playerUUID) {

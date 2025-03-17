@@ -96,8 +96,7 @@ public class ChatListener implements Listener {
             event.setCancelled(true);
             
             String message = event.getMessage().trim();
-            
-            // 如果输入"cancel"或"取消"，终止操作
+
             if (message.equalsIgnoreCase("cancel") || message.equalsIgnoreCase("取消")) {
                 player.removeMetadata("dk_admin_add_target", plugin);
                 player.sendMessage(plugin.getMessages().getMessage("command.cancelled"));

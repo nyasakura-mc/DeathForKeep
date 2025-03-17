@@ -54,6 +54,53 @@ public class BossBarManager {
         }
     }
     
+    /**
+     * 显示获取保护时的BossBar
+     * 
+     * @param player 玩家
+     * @param expiryTime 保护到期时间
+     */
+    public void showProtectionGainedMessage(Player player, long expiryTime) {
+        if (!plugin.getConfig().getBoolean("bossbar.enabled", true) || 
+            !plugin.getConfig().getBoolean("bossbar.protection-gained.enabled", true)) {
+            return;
+        }
+        
+        Messages messages = plugin.getMessages();
+        String formattedTime = TimeUtils.formatDateTime(expiryTime * 1000);
+        String message = messages.getMessage("bossbar.protection-gained", "time", formattedTime);
+        
+        BarColor color = getBarColor("bossbar.protection-gained.color", BarColor.GREEN);
+        int duration = plugin.getConfig().getInt("bossbar.protection-gained.duration", 10);
+        
+        showBossBar(player, message, color, duration);
+    }
+    
+    /**
+     * 显示被共享保护时的BossBar
+     * 
+     * @param player 接收共享的玩家
+     * @param sharerName 共享者名称
+     * @param expiryTime 保护到期时间
+     */
+    public void showProtectionSharedMessage(Player player, String sharerName, long expiryTime) {
+        if (!plugin.getConfig().getBoolean("bossbar.enabled", true) || 
+            !plugin.getConfig().getBoolean("bossbar.protection-gained.enabled", true)) {
+            return;
+        }
+        
+        Messages messages = plugin.getMessages();
+        String formattedTime = TimeUtils.formatDateTime(expiryTime * 1000);
+        String message = messages.getMessage("bossbar.protection-shared", 
+                                             "player", sharerName,
+                                             "time", formattedTime);
+        
+        BarColor color = getBarColor("bossbar.protection-gained.color", BarColor.GREEN);
+        int duration = plugin.getConfig().getInt("bossbar.protection-gained.duration", 10);
+        
+        showBossBar(player, message, color, duration);
+    }
+    
     public void showHourReminder(Player player) {
         if (!plugin.getConfig().getBoolean("bossbar.enabled", true)) {
             return;

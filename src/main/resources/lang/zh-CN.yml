@@ -121,12 +121,15 @@ death:
   shared-protected: "&a你的物品受到了来自 %player% 的共享保护！"
 
 bossbar:
-  hour: "&e你的死亡物品保护将在 1 小时后到期"
-  ten-minutes: "&c你的死亡物品保护将在 10 分钟后到期"
-  expired: "&c你的死亡物品保护已到期"
-  shared-hour: "&e来自 %player% 的共享保护将在 1 小时后到期"
-  shared-ten-minutes: "&c来自 %player% 的共享保护将在 10 分钟后到期"
-  shared-expired: "&c来自 %player% 的共享保护已到期"
+  hour: "&e你的死亡保护将在1小时后到期！"
+  ten-minutes: "&c你的死亡保护将在10分钟后到期！"
+  expired: "&c你的死亡保护已到期！"
+  shared:
+    hour: "&e%player% 分享给你的死亡保护将在1小时后到期！"
+    ten-minutes: "&c%player% 分享给你的死亡保护将在10分钟后到期！"
+    expired: "&c%player% 分享给你的死亡保护已到期！"
+  protection-gained: "&a获得死亡保护! 有效期至: %time%"
+  protection-shared: "&a%player% 已与您分享死亡保护! 有效期至: %time%"
 
 time:
   days: "%d 天"

@@ -128,6 +128,12 @@ public class ShareRequestManager {
         target.sendMessage(messages.getMessage("share.success-target", 
                 "player", sender.getName()));
         
+        // 获取保护到期时间
+        long expiryTime = plugin.getPlayerData(senderUUID).getExpiryTime();
+        
+        // 显示BossBar
+        plugin.getBossBarManager().showProtectionSharedMessage(target, sender.getName(), expiryTime);
+        
         // 播放共享成功的粒子效果
         if (plugin.getConfig().getBoolean("particles.share-effect", true)) {
             Bukkit.getScheduler().runTask(plugin, () -> {

@@ -1,5 +1,7 @@
 package org.littlesheep.deathforkeep.utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -7,6 +9,7 @@ import java.util.regex.Pattern;
 public class TimeUtils {
     
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)([smhdw])");
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
     /**
      * 将时间字符串转换为秒数
@@ -57,6 +60,16 @@ public class TimeUtils {
         }
         
         return found ? totalSeconds : -1;
+    }
+    
+    /**
+     * 将毫秒时间戳格式化为日期时间字符串
+     * 
+     * @param timestamp 毫秒时间戳
+     * @return 格式化后的日期时间字符串
+     */
+    public static String formatDateTime(long timestamp) {
+        return DATE_FORMAT.format(new Date(timestamp));
     }
     
     /**

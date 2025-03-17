@@ -28,6 +28,12 @@ particles:
   offset-y: 1.0
   offset-z: 0.5
   speed: 0.1
+  # 获取保护时显示粒子效果
+  on-protection-gained:
+    enabled: true
+    duration: 3  # 粒子持续显示秒数
+    type: "TOTEM"  # 粒子类型
+    count: 100    # 粒子数量
 
 # BossBar 设置
 bossbar:
@@ -35,6 +41,11 @@ bossbar:
   hour-color: YELLOW
   ten-minute-color: RED
   expiry-color: RED
+  # 获取保护时显示BossBar
+  protection-gained:
+    enabled: true
+    duration: 10  # BossBar显示秒数
+    color: GREEN  # BossBar颜色: GREEN, BLUE, PINK, PURPLE, RED, WHITE, YELLOW
 
 # 共享设置
 share:
