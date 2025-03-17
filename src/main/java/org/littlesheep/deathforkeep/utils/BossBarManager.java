@@ -33,16 +33,25 @@ public class BossBarManager {
     }
     
     public void stopTask() {
-        if (updateTask != null && !updateTask.isCancelled()) {
-            updateTask.cancel();
-            updateTask = null;
+        try {
+            if (updateTask != null && !updateTask.isCancelled()) {
+                updateTask.cancel();
+                updateTask = null;
+            }
+            
+            // 移除所有 BossBar
+            for (BossBar bossBar : playerBossBars.values()) {
+                try {
+                    bossBar.removeAll();
+                } catch (Exception e) {
+                    plugin.getLogger().warning("移除BossBar时出错: " + e.getMessage());
+                }
+            }
+            playerBossBars.clear();
+            plugin.getLogger().info("所有BossBar已清理");
+        } catch (Exception e) {
+            plugin.getLogger().severe("停止BossBar任务时发生错误: " + e.getMessage());
         }
-        
-        // 移除所有 BossBar
-        for (BossBar bossBar : playerBossBars.values()) {
-            bossBar.removeAll();
-        }
-        playerBossBars.clear();
     }
     
     public void showHourReminder(Player player) {

@@ -68,24 +68,43 @@ public class DeathListener implements Listener {
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (player.isOnline()) {
-                        // 恢复物品
-                        player.getInventory().setContents(inventoryBackups.get(playerUUID));
-                        player.getInventory().setArmorContents(armorBackups.get(playerUUID));
-                        
-                        // 恢复经验
-                        player.setTotalExperience(0);
-                        player.setLevel(0);
-                        player.setExp(0);
-                        player.giveExp(expBackups.get(playerUUID));
-                        
-                        // 更新物品栏
-                        player.updateInventory();
-                        
-                        // 清理备份数据
-                        inventoryBackups.remove(playerUUID);
-                        armorBackups.remove(playerUUID);
-                        expBackups.remove(playerUUID);
+                    try {
+                        if (player.isOnline()) {
+                            // 恢复物品
+                            if (inventoryBackups.get(playerUUID) != null) {
+                                player.getInventory().setContents(inventoryBackups.get(playerUUID));
+                            }
+                            
+                            if (armorBackups.get(playerUUID) != null) {
+                                player.getInventory().setArmorContents(armorBackups.get(playerUUID));
+                            }
+                            
+                            // 恢复经验
+                            if (expBackups.containsKey(playerUUID)) {
+                                player.setTotalExperience(0);
+                                player.setLevel(0);
+                                player.setExp(0);
+                                player.giveExp(expBackups.get(playerUUID));
+                            }
+                            
+                            // 更新物品栏
+                            player.updateInventory();
+                            
+                            // 清理备份数据
+                            inventoryBackups.remove(playerUUID);
+                            armorBackups.remove(playerUUID);
+                            expBackups.remove(playerUUID);
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().severe("恢复玩家物品时出错: " + e.getMessage());
+                        // 尝试安全地清理备份数据
+                        try {
+                            inventoryBackups.remove(playerUUID);
+                            armorBackups.remove(playerUUID);
+                            expBackups.remove(playerUUID);
+                        } catch (Exception ex) {
+                            plugin.getLogger().severe("清理备份数据时出错: " + ex.getMessage());
+                        }
                     }
                 }
             }.runTaskLater(plugin, 1L);
@@ -128,19 +147,28 @@ public class DeathListener implements Listener {
     }
     
     private void spawnProtectionParticles(Location location) {
-        String particleType = plugin.getConfig().getString("particles.type", "TOTEM");
-        int count = plugin.getConfig().getInt("particles.count", 50);
-        double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.5);
-        double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.0);
-        double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.5);
-        double speed = plugin.getConfig().getDouble("particles.speed", 0.1);
+        if (location == null || location.getWorld() == null) {
+            plugin.getLogger().warning("无法生成粒子效果: 位置或世界为null");
+            return;
+        }
         
         try {
-            Particle particle = Particle.valueOf(particleType);
-            location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("无效的粒子类型: " + particleType + "，使用默认TOTEM");
-            location.getWorld().spawnParticle(Particle.TOTEM, location, count, offsetX, offsetY, offsetZ, speed);
+            String particleType = plugin.getConfig().getString("particles.type", "TOTEM");
+            int count = plugin.getConfig().getInt("particles.count", 50);
+            double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.5);
+            double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.0);
+            double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.5);
+            double speed = plugin.getConfig().getDouble("particles.speed", 0.1);
+            
+            try {
+                Particle particle = Particle.valueOf(particleType);
+                location.getWorld().spawnParticle(particle, location, count, offsetX, offsetY, offsetZ, speed);
+            } catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("无效的粒子类型: " + particleType + "，使用默认TOTEM");
+                location.getWorld().spawnParticle(Particle.TOTEM, location, count, offsetX, offsetY, offsetZ, speed);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("生成粒子效果时出错: " + e.getMessage());
         }
     }
     

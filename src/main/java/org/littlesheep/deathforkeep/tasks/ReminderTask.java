@@ -33,9 +33,17 @@ public class ReminderTask {
     }
 
     public void cancelTask() {
-        if (task != null && !task.isCancelled()) {
-            task.cancel();
-            task = null;
+        try {
+            if (task != null && !task.isCancelled()) {
+                task.cancel();
+                task = null;
+                plugin.getLogger().info("提醒任务已成功取消");
+            }
+            // 清理资源
+            hourReminderSent.clear();
+            tenMinuteReminderSent.clear();
+        } catch (Exception e) {
+            plugin.getLogger().severe("取消提醒任务时出错: " + e.getMessage());
         }
     }
 

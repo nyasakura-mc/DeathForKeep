@@ -112,18 +112,41 @@ public final class DeathForKeep extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // 关闭数据库连接
-        if (databaseManager != null) {
-            databaseManager.closeConnection();
+        // 保存所有玩家数据
+        try {
+            for (UUID playerUUID : playerDataMap.keySet()) {
+                savePlayerData(playerUUID);
+            }
+            colorLogger.info("所有玩家数据已保存");
+        } catch (Exception e) {
+            colorLogger.error("保存玩家数据时出错: " + e.getMessage());
         }
         
         // 取消任务
-        if (reminderTask != null) {
-            reminderTask.cancelTask();
+        try {
+            if (reminderTask != null) {
+                reminderTask.cancelTask();
+                colorLogger.info("提醒任务已取消");
+            }
+            
+            if (bossBarManager != null) {
+                bossBarManager.stopTask();
+                colorLogger.info("BossBar任务已取消");
+            }
+            
+            // 取消所有可能遗留的任务
+            Bukkit.getScheduler().cancelTasks(this);
+        } catch (Exception e) {
+            colorLogger.error("取消任务时出错: " + e.getMessage());
         }
         
-        if (bossBarManager != null) {
-            bossBarManager.stopTask();
+        // 关闭数据库连接
+        try {
+            if (databaseManager != null) {
+                databaseManager.closeConnection();
+            }
+        } catch (Exception e) {
+            colorLogger.error("关闭数据库连接时出错: " + e.getMessage());
         }
         
         colorLogger.logShutdown();

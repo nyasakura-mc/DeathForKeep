@@ -46,7 +46,6 @@ public class PlayerData {
     public boolean isActive() {
         long currentTime = System.currentTimeMillis() / 1000;
         boolean active = expiryTime > currentTime;
-        System.out.println("PlayerData.isActive: UUID=" + uuid + ", expiryTime=" + expiryTime + ", currentTime=" + currentTime + ", active=" + active);
         return active;
     }
 } 

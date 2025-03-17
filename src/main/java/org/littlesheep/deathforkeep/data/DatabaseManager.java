@@ -45,9 +45,12 @@ public class DatabaseManager {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
+                plugin.getLogger().info("数据库连接已成功关闭");
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "关闭数据库连接时出错", e);
+            plugin.getLogger().log(Level.SEVERE, "关闭数据库连接时出错: " + e.getMessage(), e);
+        } finally {
+            connection = null;
         }
     }
     
