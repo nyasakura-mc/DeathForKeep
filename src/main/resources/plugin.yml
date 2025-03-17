@@ -1,5 +1,8 @@
 name: DeathForKeep
 version: '${project.version}'
+description: 死亡物品保护插件
+author: nyasakura-mc
+repo: DeathForKeep
 main: org.littlesheep.deathforkeep.DeathForKeep
 api-version: '1.20'
 depend: [Vault]

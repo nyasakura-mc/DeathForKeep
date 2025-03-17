@@ -1,3 +1,7 @@
+/*
+  共享请求管理器
+  处理共享请求的创建、接受和拒绝
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import org.bukkit.Bukkit;

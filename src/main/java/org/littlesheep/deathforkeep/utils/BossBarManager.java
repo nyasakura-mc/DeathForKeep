@@ -1,3 +1,7 @@
+/*
+   BossBar 管理器
+   处理 BossBar 的创建和更新
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import org.bukkit.Bukkit;

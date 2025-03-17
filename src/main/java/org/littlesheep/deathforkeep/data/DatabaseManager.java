@@ -1,3 +1,7 @@
+/*
+  数据库管理器
+  处理数据库的初始化、连接和数据操作
+ */
 package org.littlesheep.deathforkeep.data;
 
 import org.littlesheep.deathforkeep.DeathForKeep;

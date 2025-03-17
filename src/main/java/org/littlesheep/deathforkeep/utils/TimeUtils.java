@@ -1,3 +1,7 @@
+/*
+  时间工具类
+  提供时间相关的实用方法
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import java.text.SimpleDateFormat;

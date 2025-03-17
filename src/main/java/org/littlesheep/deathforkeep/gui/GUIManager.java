@@ -1,3 +1,7 @@
+/*
+  图形用户界面管理器
+  处理GUI的创建和事件
+ */
 package org.littlesheep.deathforkeep.gui;
 
 import org.bukkit.Bukkit;
@@ -622,6 +626,17 @@ public class GUIManager implements Listener {
         Messages messages = plugin.getMessages();
         player.sendMessage(messages.getMessage(newState ? 
                 "command.particles.enabled" : "command.particles.disabled"));
+        
+        // 如果开启了粒子效果并且玩家有保护状态，显示粒子效果
+        if (newState && plugin.hasActiveProtection(uuid)) {
+            if (plugin.getConfig().getBoolean("particles.on-toggle", true)) {
+                org.littlesheep.deathforkeep.utils.ParticleUtils.playProtectionGainedEffect(
+                    plugin, 
+                    player, 
+                    plugin.getConfig().getInt("particles.on-toggle.duration", 2)
+                );
+            }
+        }
     }
     
     private void confirmPurchase(Player player, int days) {

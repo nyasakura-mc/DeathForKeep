@@ -1,3 +1,7 @@
+/*
+  更新检查器
+  检查插件更新并通知管理员
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import org.bukkit.Bukkit;

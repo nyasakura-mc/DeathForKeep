@@ -1,3 +1,7 @@
+/*
+  聊天监听器
+  处理玩家聊天事件
+ */
 package org.littlesheep.deathforkeep.listeners;
 
 import org.bukkit.Bukkit;

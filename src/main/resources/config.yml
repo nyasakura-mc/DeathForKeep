@@ -34,6 +34,12 @@ particles:
     duration: 3  # 粒子持续显示秒数
     type: "TOTEM"  # 粒子类型
     count: 100    # 粒子数量
+  # 切换粒子状态时显示粒子效果
+  on-toggle:
+    enabled: true
+    duration: 2  # 粒子持续显示秒数
+    type: "TOTEM"  # 粒子类型
+    count: 80     # 粒子数量
 
 # BossBar 设置
 bossbar:

@@ -1,3 +1,7 @@
+/*
+  死亡物品保护命令类
+  处理死亡物品保护相关的命令
+ */
 package org.littlesheep.deathforkeep.commands;
 
 import net.milkbowl.vault.economy.Economy;
@@ -470,6 +474,16 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
         
         if (newStatus) {
             player.sendMessage(messages.getMessage("command.particles.enabled"));
+            // 如果玩家开启了粒子效果并且有保护，显示粒子效果
+            if (plugin.hasActiveProtection(playerUUID)) {
+                if (plugin.getConfig().getBoolean("particles.on-toggle", true)) {
+                    org.littlesheep.deathforkeep.utils.ParticleUtils.playProtectionGainedEffect(
+                        plugin, 
+                        player, 
+                        plugin.getConfig().getInt("particles.on-toggle.duration", 2)
+                    );
+                }
+            }
         } else {
             player.sendMessage(messages.getMessage("command.particles.disabled"));
         }

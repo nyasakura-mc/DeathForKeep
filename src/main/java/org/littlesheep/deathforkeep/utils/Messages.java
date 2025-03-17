@@ -1,3 +1,7 @@
+/*
+  消息处理类
+  处理插件消息的加载和获取
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import org.bukkit.ChatColor;

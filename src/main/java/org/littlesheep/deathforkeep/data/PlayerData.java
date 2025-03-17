@@ -1,3 +1,7 @@
+/*
+  玩家数据类
+  存储玩家保护相关数据
+ */
 package org.littlesheep.deathforkeep.data;
 
 import java.util.UUID;

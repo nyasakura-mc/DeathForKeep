@@ -1,3 +1,7 @@
+/*
+  粒子效果工具类
+  提供粒子效果的播放方法
+ */
 package org.littlesheep.deathforkeep.utils;
 
 import org.bukkit.Location;
@@ -53,12 +57,26 @@ public class ParticleUtils {
      * @param duration 持续时间（秒）
      */
     public static void playProtectionGainedEffect(DeathForKeep plugin, Player player, int duration) {
-        if (!plugin.getConfig().getBoolean("particles.on-protection-gained.enabled", true)) {
+        // 决定使用哪个配置部分
+        String configSection = "particles.on-protection-gained";
+        
+        // 检查调用堆栈以确定是在切换粒子还是获得保护时调用的
+        // 这种方法不是最理想的，但可以工作
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        for (StackTraceElement element : stackTrace) {
+            if (element.getMethodName().equals("toggleParticles") || 
+                element.getMethodName().equals("handleParticles")) {
+                configSection = "particles.on-toggle";
+                break;
+            }
+        }
+        
+        if (!plugin.getConfig().getBoolean(configSection + ".enabled", true)) {
             return;
         }
         
-        String particleType = plugin.getConfig().getString("particles.on-protection-gained.type", "TOTEM");
-        final int count = plugin.getConfig().getInt("particles.on-protection-gained.count", 100);
+        String particleType = plugin.getConfig().getString(configSection + ".type", "TOTEM");
+        final int count = plugin.getConfig().getInt(configSection + ".count", 100);
         
         // 确定粒子类型
         Particle particleToUse;

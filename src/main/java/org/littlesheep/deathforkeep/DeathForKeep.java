@@ -1,3 +1,7 @@
+/*
+  死亡物品保护插件主类
+  管理插件的启动、禁用和相关功能
+ */
 package org.littlesheep.deathforkeep;
 
 import net.milkbowl.vault.economy.Economy;
