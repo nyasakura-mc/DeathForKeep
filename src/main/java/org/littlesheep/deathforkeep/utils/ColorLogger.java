@@ -29,6 +29,10 @@ public class ColorLogger {
         logger.severe(format("&c[ERROR] &f" + message));
     }
 
+    public void warn(String message) {
+        logger.warning(format("&e[WARNING] &f" + message));
+    }
+
     public void logStartup() {
         String[] logo = {
             "&6 ____             _   _     _____           _  __              ",

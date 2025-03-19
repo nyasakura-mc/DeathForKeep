@@ -42,14 +42,18 @@ public class DatabaseManager {
                 connectionPool.put("conn-" + i, conn);
             }
             
+            // 创建基本表结构
             try (Statement statement = connection.createStatement()) {
-                // 创建玩家数据表
+                // 创建玩家数据表（基本结构）
                 statement.execute("CREATE TABLE IF NOT EXISTS player_data (" +
                         "uuid TEXT PRIMARY KEY, " +
-                        "expiry_time BIGINT, " +
-                        "particles_enabled BOOLEAN DEFAULT 1, " +
-                        "shared_with TEXT DEFAULT NULL)");
+                        "expiry_time BIGINT)");
             }
+            
+            // 调用setupTables方法确保所有列都存在
+            setupTables();
+            
+            plugin.getColorLogger().info("数据库初始化完成");
         } catch (SQLException | ClassNotFoundException e) {
             plugin.getLogger().log(Level.SEVERE, "无法初始化数据库", e);
         }
@@ -96,11 +100,15 @@ public class DatabaseManager {
     public void savePlayerData(UUID uuid, long expiryTime, boolean particlesEnabled, UUID sharedWith) {
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                "INSERT OR REPLACE INTO player_data (uuid, expiry_time, particles_enabled, shared_with) VALUES (?, ?, ?, ?)")) {
+                "INSERT OR REPLACE INTO player_data (uuid, expiry_time, active, particles_enabled, shared_with) VALUES (?, ?, ?, ?, ?)")) {
             ps.setString(1, uuid.toString());
             ps.setLong(2, expiryTime);
-            ps.setBoolean(3, particlesEnabled);
-            ps.setString(4, sharedWith != null ? sharedWith.toString() : null);
+            // 根据过期时间计算active状态
+            long currentTime = System.currentTimeMillis() / 1000;
+            boolean active = expiryTime > currentTime;
+            ps.setBoolean(3, active);
+            ps.setBoolean(4, particlesEnabled);
+            ps.setString(5, sharedWith != null ? sharedWith.toString() : null);
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "保存玩家数据时出错: " + uuid, e);
@@ -133,16 +141,53 @@ public class DatabaseManager {
             while (resultSet.next()) {
                 UUID playerUUID = UUID.fromString(resultSet.getString("uuid"));
                 long expiryTime = resultSet.getLong("expiry_time");
-                boolean active = resultSet.getBoolean("active");
-                boolean particlesEnabled = resultSet.getBoolean("particles_enabled");
-                String sharedWithStr = resultSet.getString("shared_with");
+                
+                // 使用默认值处理可能不存在的列
+                boolean active = false;
+                try {
+                    active = resultSet.getBoolean("active");
+                } catch (SQLException e) {
+                    // 如果active列不存在，使用计算值
+                    long currentTime = System.currentTimeMillis() / 1000;
+                    active = expiryTime > currentTime;
+                    
+                    // 记录警告
+                    plugin.getColorLogger().warn("数据库中缺少active列，为玩家 " + playerUUID + " 计算活动状态: " + active);
+                }
+                
+                boolean particlesEnabled = true;
+                try {
+                    particlesEnabled = resultSet.getBoolean("particles_enabled");
+                } catch (SQLException ignored) {}
+                
+                String sharedWithStr = null;
+                try {
+                    sharedWithStr = resultSet.getString("shared_with");
+                } catch (SQLException ignored) {}
+                
                 UUID sharedWith = sharedWithStr != null ? UUID.fromString(sharedWithStr) : null;
                 
-                // 获取新增的保护等级相关数据
-                String protectionLevel = resultSet.getString("protection_level");
-                boolean keepExp = resultSet.getBoolean("keep_exp");
-                String particleEffect = resultSet.getString("particle_effect");
-                boolean noDeathPenalty = resultSet.getBoolean("no_death_penalty");
+                // 获取新增的保护等级相关数据，使用默认值处理可能不存在的列
+                String protectionLevel = null;
+                boolean keepExp = false;
+                String particleEffect = null;
+                boolean noDeathPenalty = false;
+                
+                try {
+                    protectionLevel = resultSet.getString("protection_level");
+                } catch (SQLException ignored) {}
+                
+                try {
+                    keepExp = resultSet.getBoolean("keep_exp");
+                } catch (SQLException ignored) {}
+                
+                try {
+                    particleEffect = resultSet.getString("particle_effect");
+                } catch (SQLException ignored) {}
+                
+                try {
+                    noDeathPenalty = resultSet.getBoolean("no_death_penalty");
+                } catch (SQLException ignored) {}
                 
                 PlayerData playerData = new PlayerData(playerUUID, expiryTime, active, sharedWith);
                 playerData.setParticlesEnabled(particlesEnabled);
@@ -150,6 +195,13 @@ public class DatabaseManager {
                 playerData.setKeepExp(keepExp);
                 playerData.setParticleEffect(particleEffect);
                 playerData.setNoDeathPenalty(noDeathPenalty);
+                
+                // 确保活动状态是根据过期时间计算的，除非强制设置为活动状态
+                if (active && playerData.getExpiryTime() < System.currentTimeMillis() / 1000) {
+                    playerData.setForcedActive(true);
+                    plugin.getColorLogger().info("玩家 " + playerUUID + " 的保护状态被强制设置为活动，尽管过期时间已过: " + 
+                                               new java.util.Date(playerData.getExpiryTime() * 1000));
+                }
                 
                 playerDataMap.put(playerUUID, playerData);
             }
@@ -288,15 +340,34 @@ public class DatabaseManager {
                     "no_death_penalty BOOLEAN DEFAULT FALSE" +
                     ")");
             
+            // 检查active列是否存在
+            ResultSet rsActive = connection.getMetaData().getColumns(null, null, "player_data", "active");
+            if (!rsActive.next()) {
+                // 添加active列
+                try {
+                    statement.executeUpdate("ALTER TABLE player_data ADD COLUMN active BOOLEAN DEFAULT 0");
+                    plugin.getColorLogger().info("数据库表结构已更新，添加了active字段");
+                } catch (SQLException e) {
+                    // SQLite可能不支持某些ALTER TABLE操作，忽略错误
+                    plugin.getColorLogger().warn("无法添加active列，将使用计算值: " + e.getMessage());
+                }
+            }
+            rsActive.close();
+            
             // 检查是否需要更新表结构添加新列
             ResultSet rs = connection.getMetaData().getColumns(null, null, "player_data", "protection_level");
             if (!rs.next()) {
                 // 添加新列
-                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN protection_level VARCHAR(50)");
-                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN keep_exp BOOLEAN DEFAULT FALSE");
-                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN particle_effect VARCHAR(50)");
-                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN no_death_penalty BOOLEAN DEFAULT FALSE");
-                plugin.getColorLogger().info("数据库表结构已更新，添加了保护等级相关字段");
+                try {
+                    statement.executeUpdate("ALTER TABLE player_data ADD COLUMN protection_level VARCHAR(50)");
+                    statement.executeUpdate("ALTER TABLE player_data ADD COLUMN keep_exp BOOLEAN DEFAULT FALSE");
+                    statement.executeUpdate("ALTER TABLE player_data ADD COLUMN particle_effect VARCHAR(50)");
+                    statement.executeUpdate("ALTER TABLE player_data ADD COLUMN no_death_penalty BOOLEAN DEFAULT FALSE");
+                    plugin.getColorLogger().info("数据库表结构已更新，添加了保护等级相关字段");
+                } catch (SQLException e) {
+                    // SQLite可能不支持某些ALTER TABLE操作，忽略错误
+                    plugin.getColorLogger().warn("无法添加保护等级相关列: " + e.getMessage());
+                }
             }
             rs.close();
             

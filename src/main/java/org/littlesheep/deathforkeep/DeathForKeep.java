@@ -380,6 +380,21 @@ public final class DeathForKeep extends JavaPlugin {
                 data.isParticlesEnabled(), 
                 data.getSharedWith()
             );
+            
+            // 确保更新所有其他字段
+            if (data.getProtectionLevel() != null || data.isKeepExp() || data.getParticleEffect() != null || data.isNoDeathPenalty()) {
+                databaseManager.updatePlayerData(
+                    uuid,
+                    data.getExpiryTime(),
+                    data.isActive(),
+                    data.isParticlesEnabled(),
+                    data.getSharedWith(),
+                    data.getProtectionLevel(),
+                    data.isKeepExp(),
+                    data.getParticleEffect(),
+                    data.isNoDeathPenalty()
+                );
+            }
         }
     }
 

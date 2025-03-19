@@ -15,11 +15,13 @@ public class PlayerData {
     private boolean keepExp;
     private String particleEffect;
     private boolean noDeathPenalty;
+    private boolean forcedActive;
     
     public PlayerData(UUID playerUUID, long expiryTime, boolean active, UUID sharedWith) {
         this.playerUUID = playerUUID;
         this.expiryTime = expiryTime;
         this.sharedWith = sharedWith;
+        this.forcedActive = active;
     }
     
     public UUID getUuid() {
@@ -51,9 +53,12 @@ public class PlayerData {
     }
     
     public boolean isActive() {
+        if (forcedActive) {
+            return true;
+        }
+        
         long currentTime = System.currentTimeMillis() / 1000;
-        boolean active = expiryTime > currentTime;
-        return active;
+        return expiryTime > currentTime;
     }
 
     public String getProtectionLevel() {
@@ -86,5 +91,13 @@ public class PlayerData {
 
     public void setNoDeathPenalty(boolean noDeathPenalty) {
         this.noDeathPenalty = noDeathPenalty;
+    }
+
+    public void setForcedActive(boolean forcedActive) {
+        this.forcedActive = forcedActive;
+    }
+    
+    public boolean getForcedActive() {
+        return this.forcedActive;
     }
 } 
