@@ -5,9 +5,16 @@ import java.util.logging.Logger;
 
 public class ColorLogger {
     private final Logger logger;
+    private final String version;
 
     public ColorLogger(Logger logger) {
         this.logger = logger;
+        this.version = "1.0.0-SNAPSHOT"; // 默认版本号
+    }
+    
+    public ColorLogger(Logger logger, String version) {
+        this.logger = logger;
+        this.version = version;
     }
 
     public static String format(String message) {
@@ -37,7 +44,7 @@ public class ColorLogger {
         }
         
         logger.info(format("&6=========================================================="));
-        logger.info(format("&6 DeathForKeep &fv" + logger.getName()));
+        logger.info(format("&6 DeathForKeep &fv" + version));
         logger.info(format("&6 作者: LittleSheep"));
         logger.info(format("&6=========================================================="));
     }

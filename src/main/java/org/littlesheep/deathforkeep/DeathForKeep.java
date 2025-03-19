@@ -47,7 +47,7 @@ public final class DeathForKeep extends JavaPlugin {
     @Override
     public void onEnable() {
         // 初始化彩色日志
-        colorLogger = new ColorLogger(getLogger());
+        colorLogger = new ColorLogger(getLogger(), getDescription().getVersion());
         colorLogger.logStartup();
         
         // 初始化配置管理器
