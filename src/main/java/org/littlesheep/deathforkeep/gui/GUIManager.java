@@ -159,6 +159,24 @@ public class GUIManager implements Listener {
                         double priceMultiplier = levelConfig.getDouble("price-multiplier", 1.0);
                         String description = levelConfig.getString("description", "保护等级");
                         
+                        // 获取特性信息
+                        boolean keepExp = levelConfig.getBoolean("keep-exp", false);
+                        String particleEffect = levelConfig.getString("particle-effect");
+                        boolean noDeathPenalty = levelConfig.getBoolean("no-death-penalty", false);
+                        
+                        // 构建特性描述
+                        StringBuilder features = new StringBuilder();
+                        features.append("&7• 保留所有物品");
+                        if (keepExp) {
+                            features.append("\n&7• 保留所有经验");
+                        }
+                        if (noDeathPenalty) {
+                            features.append("\n&7• 避免死亡惩罚");
+                        }
+                        if (particleEffect != null && !particleEffect.isEmpty()) {
+                            features.append("\n&7• 特殊粒子效果: &e").append(particleEffect);
+                        }
+                        
                         // 计算1天的价格
                         double price1d = plugin.getConfig().getDouble("prices.1d") * priceMultiplier;
                         
@@ -172,8 +190,10 @@ public class GUIManager implements Listener {
                         
                         ItemStack item = createItem(player, material, 
                                 "&b" + WordUtils.capitalize(levelKey) + " &f保护", 
-                                Arrays.asList(("&7" + description + "\n&7基础价格: &6" + 
-                                        String.format("%.2f", price1d) + " &7/天\n&e点击选择此保护等级").split("\n")));
+                                Arrays.asList(("&7" + description + 
+                                        "\n\n&7特性：\n" + features.toString() + 
+                                        "\n\n&7基础价格: &6" + String.format("%.2f", price1d) + 
+                                        " &7/天\n&e点击选择此保护等级").split("\n")));
                         
                         inventory.setItem(slot, item);
                         slot += 2;
@@ -556,22 +576,44 @@ public class GUIManager implements Listener {
             double price7d = plugin.getConfig().getDouble("prices.7d") * multiplier;
             double price30d = plugin.getConfig().getDouble("prices.30d") * multiplier;
             
+            // 获取当前等级的详细特性
+            ConfigurationSection levelConfig = plugin.getConfig().getConfigurationSection("protection-levels." + levelKey);
+            boolean keepExp = levelConfig != null && levelConfig.getBoolean("keep-exp", false);
+            String particleEffect = levelConfig != null ? levelConfig.getString("particle-effect", "无") : "无";
+            boolean noDeathPenalty = levelConfig != null && levelConfig.getBoolean("no-death-penalty", false);
+            
+            // 构建特性描述
+            StringBuilder features = new StringBuilder("&7特性：");
+            features.append("\n&7• 保留所有物品");
+            if (keepExp) {
+                features.append("\n&7• 保留所有经验");
+            }
+            if (noDeathPenalty) {
+                features.append("\n&7• 避免死亡惩罚");
+            }
+            if (particleEffect != null && !particleEffect.equals("无")) {
+                features.append("\n&7• 特殊粒子效果");
+            }
+            
             // 1天选项
             ItemStack item1d = createItem(player, Material.CLOCK, 
                     "&a1天保护", 
-                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price1d) + " &7金币\n&e点击购买").split("\n")));
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price1d) + " &7金币" + 
+                            "\n" + features.toString() + "\n&e点击购买").split("\n")));
             inventory.setItem(11, item1d);
             
             // 7天选项
             ItemStack item7d = createItem(player, Material.SUNFLOWER, 
                     "&a7天保护", 
-                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price7d) + " &7金币\n&e点击购买").split("\n")));
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price7d) + " &7金币" + 
+                            "\n" + features.toString() + "\n&e点击购买").split("\n")));
             inventory.setItem(13, item7d);
             
             // 30天选项
             ItemStack item30d = createItem(player, Material.EMERALD, 
                     "&a30天保护", 
-                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price30d) + " &7金币\n&e点击购买").split("\n")));
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price30d) + " &7金币" + 
+                            "\n" + features.toString() + "\n&e点击购买").split("\n")));
             inventory.setItem(15, item30d);
             
             // 返回按钮

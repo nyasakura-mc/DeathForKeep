@@ -351,10 +351,11 @@ commands:
   help:
     title: "&6=== DeathKeep 帮助 ==="
     lines:
-      - "&a/dk buy [天数] &7- 购买指定时间的掉落保护"
+      - "&a/dk buy [basic|advanced|premium] [天数] &7- 购买不同等级的掉落保护"
       - "&a/dk gui &7- 打开图形界面"
       - "&a/dk help &7- 查看帮助"
       - "&a/dk particles &7- 开关死亡掉落效果"
+      - "&a/dk share <玩家> &7- 与其他玩家共享保护"
       - "&c/dk bulk add <时长> <玩家> &7- 批量增加时长（管理员）"
       - "&c/dk bulk remove <时长> <玩家> &7- 批量减少时长（管理员）"
       - "&c/dk resetall &7- 重置所有数据（管理员）"
