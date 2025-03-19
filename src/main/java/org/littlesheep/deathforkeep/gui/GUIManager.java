@@ -26,6 +26,9 @@ import java.util.*;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.Particle;
+import org.apache.commons.lang.WordUtils;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.event.inventory.InventoryType;
 
 public class GUIManager implements Listener {
     
@@ -45,7 +48,8 @@ public class GUIManager implements Listener {
         ADMIN_MENU,
         ADMIN_PLAYER_LIST,
         ADMIN_BATCH_ACTIONS,
-        PLAYER_DETAILS
+        PLAYER_DETAILS,
+        LEVEL_DURATION_MENU
     }
     
     public GUIManager(DeathForKeep plugin) {
@@ -133,48 +137,89 @@ public class GUIManager implements Listener {
     }
     
     public void openDurationMenu(Player player) {
-        // 使用延迟任务打开菜单，避免可能的事件冲突
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // 确保移除之前的状态
-            openInventories.remove(player.getUniqueId());
-            
             Messages messages = plugin.getMessages();
-            Inventory inventory = Bukkit.createInventory(null, 27, 
+            Inventory inventory = Bukkit.createInventory(null, 36, 
                     ChatColor.translateAlternateColorCodes('&', 
                     messages.getMessage("gui.buy.title")));
             
-            // 1天选项
-            double price1d = plugin.getConfig().getDouble("prices.1d");
-            ItemStack item1d = createItem(player, Material.CLOCK, 
-                    messages.getMessage("gui.buy.one-day"), 
-                    Arrays.asList(messages.getMessage("gui.buy.one-day-lore")
-                            .replace("%price%", String.format("%.2f", price1d))
-                            .split("\n")));
-            inventory.setItem(11, item1d);
-            
-            // 7天选项
-            double price7d = plugin.getConfig().getDouble("prices.7d");
-            ItemStack item7d = createItem(player, Material.SUNFLOWER, 
-                    messages.getMessage("gui.buy.seven-days"), 
-                    Arrays.asList(messages.getMessage("gui.buy.seven-days-lore")
-                            .replace("%price%", String.format("%.2f", price7d))
-                            .split("\n")));
-            inventory.setItem(13, item7d);
-            
-            // 30天选项
-            double price30d = plugin.getConfig().getDouble("prices.30d");
-            ItemStack item30d = createItem(player, Material.EMERALD, 
-                    messages.getMessage("gui.buy.thirty-days"), 
-                    Arrays.asList(messages.getMessage("gui.buy.thirty-days-lore")
-                            .replace("%price%", String.format("%.2f", price30d))
-                            .split("\n")));
-            inventory.setItem(15, item30d);
+            // 获取保护等级配置
+            ConfigurationSection levelsSection = plugin.getConfig().getConfigurationSection("protection-levels");
+            if (levelsSection != null) {
+                List<String> levels = new ArrayList<>(levelsSection.getKeys(false));
+                
+                // 创建不同等级的保护选项
+                int slot = 10;
+                for (String levelKey : levels) {
+                    ConfigurationSection levelConfig = levelsSection.getConfigurationSection(levelKey);
+                    if (levelConfig != null) {
+                        // 检查权限
+                        String permission = levelConfig.getString("permissions");
+                        if (permission != null && !player.hasPermission(permission)) {
+                            continue;
+                        }
+                        
+                        // 获取等级信息
+                        double priceMultiplier = levelConfig.getDouble("price-multiplier", 1.0);
+                        String description = levelConfig.getString("description", "保护等级");
+                        
+                        // 计算1天的价格
+                        double price1d = plugin.getConfig().getDouble("prices.1d") * priceMultiplier;
+                        
+                        // 创建物品
+                        Material material = Material.EMERALD;
+                        if (levelKey.equalsIgnoreCase("premium")) {
+                            material = Material.DIAMOND;
+                        } else if (levelKey.equalsIgnoreCase("advanced")) {
+                            material = Material.GOLD_INGOT;
+                        }
+                        
+                        ItemStack item = createItem(player, material, 
+                                "&b" + WordUtils.capitalize(levelKey) + " &f保护", 
+                                Arrays.asList(("&7" + description + "\n&7基础价格: &6" + 
+                                        String.format("%.2f", price1d) + " &7/天\n&e点击选择此保护等级").split("\n")));
+                        
+                        inventory.setItem(slot, item);
+                        slot += 2;
+                        
+                        // 存储等级信息到玩家元数据
+                        player.setMetadata("dk_level_" + levelKey + "_multiplier", 
+                                new FixedMetadataValue(plugin, priceMultiplier));
+                    }
+                }
+            } else {
+                // 如果没有配置等级，使用旧版本的购买选项
+                double price1d = plugin.getConfig().getDouble("prices.1d");
+                double price7d = plugin.getConfig().getDouble("prices.7d");
+                double price30d = plugin.getConfig().getDouble("prices.30d");
+                
+                ItemStack item1d = createItem(player, Material.EMERALD, 
+                        messages.getMessage("gui.buy.one-day"), 
+                        Arrays.asList(messages.getMessage("gui.buy.one-day-lore")
+                                .replace("%price%", String.format("%.2f", price1d))
+                                .split("\n")));
+                inventory.setItem(11, item1d);
+                
+                ItemStack item7d = createItem(player, Material.EMERALD, 
+                        messages.getMessage("gui.buy.seven-days"), 
+                        Arrays.asList(messages.getMessage("gui.buy.seven-days-lore")
+                                .replace("%price%", String.format("%.2f", price7d))
+                                .split("\n")));
+                inventory.setItem(13, item7d);
+                
+                ItemStack item30d = createItem(player, Material.EMERALD, 
+                        messages.getMessage("gui.buy.thirty-days"), 
+                        Arrays.asList(messages.getMessage("gui.buy.thirty-days-lore")
+                                .replace("%price%", String.format("%.2f", price30d))
+                                .split("\n")));
+                inventory.setItem(15, item30d);
+            }
             
             // 返回按钮
             ItemStack backItem = createItem(player, Material.BARRIER, 
                     messages.getMessage("gui.common.back"), 
                     Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
-            inventory.setItem(22, backItem);
+            inventory.setItem(31, backItem);
             
             player.openInventory(inventory);
             // 在打开后设置状态
@@ -395,44 +440,46 @@ public class GUIManager implements Listener {
         }
         
         Player player = (Player) event.getWhoClicked();
-        UUID uuid = player.getUniqueId();
+        UUID playerUUID = player.getUniqueId();
         
-        if (!openInventories.containsKey(uuid)) {
+        if (!openInventories.containsKey(playerUUID)) {
             return;
         }
         
         event.setCancelled(true);
         
-        // 防止快速点击
-        long now = System.currentTimeMillis();
-        if (lastClickTime.containsKey(uuid) && now - lastClickTime.get(uuid) < CLICK_COOLDOWN) {
-            return;
-        }
-        lastClickTime.put(uuid, now);
-        
-        int slot = event.getRawSlot();
-        if (slot < 0) {
+        if (event.getClickedInventory() == null || event.getClickedInventory().getType() != InventoryType.CHEST) {
             return;
         }
         
-        GUIType type = openInventories.get(uuid);
+        int slot = event.getSlot();
+        GUIType guiType = openInventories.get(playerUUID);
         
-        switch (type) {
+        switch (guiType) {
             case MAIN_MENU:
                 handleMainMenuClick(player, slot);
                 break;
+                
             case DURATION_MENU:
                 handleDurationMenuClick(player, slot);
                 break;
+                
+            case LEVEL_DURATION_MENU:
+                handleLevelDurationMenuClick(player, slot);
+                break;
+                
             case ADMIN_MENU:
                 handleAdminMenuClick(player, slot);
                 break;
+                
             case ADMIN_PLAYER_LIST:
                 handlePlayerListClick(player, slot);
                 break;
+                
             case ADMIN_BATCH_ACTIONS:
                 handleBatchActionsClick(player, slot);
                 break;
+                
             case PLAYER_DETAILS:
                 handlePlayerDetailsClick(player, slot);
                 break;
@@ -461,146 +508,166 @@ public class GUIManager implements Listener {
     }
     
     private void handleDurationMenuClick(Player player, int slot) {
-        if (slot == 11) { // 1天
-            confirmPurchase(player, 1);
-        } else if (slot == 13) { // 7天
-            confirmPurchase(player, 7);
-        } else if (slot == 15) { // 30天
-            confirmPurchase(player, 30);
-        } else if (slot == 22) { // 返回
-            openMainMenu(player);
-        }
-    }
-    
-    private void handleAdminMenuClick(Player player, int slot) {
-        switch (slot) {
-            case 11: // 玩家列表
-                openPlayerListMenu(player, 0);
-                break;
-                
-            case 13: // 批量增加
-                openBatchActionsMenu(player, true);
-                break;
-                
-            case 15: // 批量减少
-                openBatchActionsMenu(player, false);
-                break;
-                
-            case 22: // 重置所有数据
-                player.closeInventory();
-                player.performCommand("dk resetall");
-                break;
-                
-            case 31: // 返回
-                openMainMenu(player);
-                break;
-        }
-    }
-    
-    private void handlePlayerListClick(Player player, int slot) {
-        if (slot >= 0 && slot < 45) {
-            // 玩家项目点击
-            Map<UUID, PlayerData> playerDataMap = plugin.getPlayerDataMap();
-            List<Map.Entry<UUID, PlayerData>> entries = new ArrayList<>(playerDataMap.entrySet());
+        // 获取保护等级配置
+        ConfigurationSection levelsSection = plugin.getConfig().getConfigurationSection("protection-levels");
+        if (levelsSection != null) {
+            List<String> levels = new ArrayList<>(levelsSection.getKeys(false));
             
-            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
-            int startIndex = page * PLAYERS_PER_PAGE;
-            
-            if (startIndex + slot < entries.size()) {
-                Map.Entry<UUID, PlayerData> entry = entries.get(startIndex + slot);
-                UUID targetUUID = entry.getKey();
-                
-                // 打开玩家详情菜单
-                openPlayerDetailsMenu(player, targetUUID);
-            }
-        } else if (slot == 45) {
-            // 上一页
-            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
-            if (page > 0) {
-                openPlayerListMenu(player, page - 1);
-            }
-        } else if (slot == 53) {
-            // 下一页
-            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
-            Map<UUID, PlayerData> playerDataMap = plugin.getPlayerDataMap();
-            int totalPages = (int) Math.ceil((double) playerDataMap.size() / PLAYERS_PER_PAGE);
-            
-            if (page < totalPages - 1) {
-                openPlayerListMenu(player, page + 1);
-            }
-        } else if (slot == 49) {
-            // 返回
-            openAdminMenu(player);
-        }
-    }
-    
-    private void handleBatchActionsClick(Player player, int slot) {
-        Messages messages = plugin.getMessages();
-        List<UUID> selected = selectedPlayers.getOrDefault(player.getUniqueId(), new ArrayList<>());
-        boolean isAddMode = player.hasMetadata("dk_batch_mode") && player.getMetadata("dk_batch_mode").get(0).asBoolean();
-        
-        if (slot >= 0 && slot < 45) {
-            // 玩家选择
-            List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
-            if (slot < onlinePlayers.size()) {
-                Player target = onlinePlayers.get(slot);
-                UUID targetUUID = target.getUniqueId();
-                
-                if (selected.contains(targetUUID)) {
-                    selected.remove(targetUUID);
-                } else {
-                    selected.add(targetUUID);
-                }
-                
-                openBatchActionsMenu(player, isAddMode);
-            }
-        } else {
-            switch (slot) {
-                case 46: // 全选
-                    selected.clear();
-                    for (Player online : Bukkit.getOnlinePlayers()) {
-                        selected.add(online.getUniqueId());
-                    }
-                    openBatchActionsMenu(player, isAddMode);
-                    break;
-                    
-                case 47: // 取消全选
-                    selected.clear();
-                    openBatchActionsMenu(player, isAddMode);
-                    break;
-                    
-                case 51: // 执行批量操作
-                    if (selected.isEmpty()) {
-                        player.sendMessage(messages.getMessage("gui.batch-actions.no-selection"));
+            // 检查是否点击了保护等级选项
+            int currentSlot = 10;
+            for (String levelKey : levels) {
+                if (slot == currentSlot) {
+                    // 获取等级乘数
+                    List<MetadataValue> metaValues = player.getMetadata("dk_level_" + levelKey + "_multiplier");
+                    if (!metaValues.isEmpty()) {
+                        double multiplier = metaValues.get(0).asDouble();
+                        
+                        // 打开购买天数选择界面
+                        openLevelDurationMenu(player, levelKey, multiplier);
                         return;
                     }
-                    
-                    player.closeInventory();
-                    
-                    // 构建玩家列表字符串
-                    StringBuilder playerList = new StringBuilder();
-                    for (UUID uuid : selected) {
-                        Player target = Bukkit.getPlayer(uuid);
-                        if (target != null) {
-                            if (playerList.length() > 0) {
-                                playerList.append(",");
-                            }
-                            playerList.append(target.getName());
-                        }
-                    }
-                    
-                    // 要求输入时长
-                    player.sendMessage(messages.getMessage("gui.batch-actions.enter-days"));
-                    
-                    // 设置元数据以便其他插件可以处理输入
-                    player.setMetadata("dk_bulk_mode", new FixedMetadataValue(plugin, isAddMode ? "add" : "remove"));
-                    player.setMetadata("dk_bulk_players", new FixedMetadataValue(plugin, playerList.toString()));
-                    break;
-                    
-                case 49: // 返回
-                    openAdminMenu(player);
-                    break;
+                }
+                currentSlot += 2;
             }
+            
+            // 如果点击了返回按钮
+            if (slot == 31) {
+                openMainMenu(player);
+            }
+        } else {
+            // 旧版本的购买方式
+            if (slot == 11) { // 1天
+                confirmPurchase(player, 1);
+            } else if (slot == 13) { // 7天
+                confirmPurchase(player, 7);
+            } else if (slot == 15) { // 30天
+                confirmPurchase(player, 30);
+            } else if (slot == 31) { // 返回
+                openMainMenu(player);
+            }
+        }
+    }
+    
+    private void openLevelDurationMenu(Player player, String levelKey, double multiplier) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            Messages messages = plugin.getMessages();
+            Inventory inventory = Bukkit.createInventory(null, 36, 
+                    ChatColor.translateAlternateColorCodes('&', 
+                    "&6选择" + WordUtils.capitalize(levelKey) + "保护天数"));
+            
+            // 获取价格
+            double price1d = plugin.getConfig().getDouble("prices.1d") * multiplier;
+            double price7d = plugin.getConfig().getDouble("prices.7d") * multiplier;
+            double price30d = plugin.getConfig().getDouble("prices.30d") * multiplier;
+            
+            // 1天选项
+            ItemStack item1d = createItem(player, Material.CLOCK, 
+                    "&a1天保护", 
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price1d) + " &7金币\n&e点击购买").split("\n")));
+            inventory.setItem(11, item1d);
+            
+            // 7天选项
+            ItemStack item7d = createItem(player, Material.SUNFLOWER, 
+                    "&a7天保护", 
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price7d) + " &7金币\n&e点击购买").split("\n")));
+            inventory.setItem(13, item7d);
+            
+            // 30天选项
+            ItemStack item30d = createItem(player, Material.EMERALD, 
+                    "&a30天保护", 
+                    Arrays.asList(("&7价格: &6" + String.format("%.2f", price30d) + " &7金币\n&e点击购买").split("\n")));
+            inventory.setItem(15, item30d);
+            
+            // 返回按钮
+            ItemStack backItem = createItem(player, Material.BARRIER, 
+                    messages.getMessage("gui.common.back"), 
+                    Arrays.asList(messages.getMessage("gui.common.back-lore").split("\n")));
+            inventory.setItem(31, backItem);
+            
+            // 存储当前选择的等级到玩家元数据
+            player.setMetadata("dk_selected_level", new FixedMetadataValue(plugin, levelKey));
+            player.setMetadata("dk_selected_multiplier", new FixedMetadataValue(plugin, multiplier));
+            
+            player.openInventory(inventory);
+            // 在打开后设置状态
+            openInventories.put(player.getUniqueId(), GUIType.LEVEL_DURATION_MENU);
+        }, 1L);
+    }
+    
+    private void handleLevelDurationMenuClick(Player player, int slot) {
+        int days = 0;
+        if (slot == 11) {
+            days = 1;
+        } else if (slot == 13) {
+            days = 7;
+        } else if (slot == 15) {
+            days = 30;
+        } else if (slot == 31) { // 返回
+            openDurationMenu(player);
+            return;
+        }
+        
+        if (days > 0) {
+            // 获取选择的等级
+            List<MetadataValue> levelMeta = player.getMetadata("dk_selected_level");
+            List<MetadataValue> multiplierMeta = player.getMetadata("dk_selected_multiplier");
+            
+            if (!levelMeta.isEmpty() && !multiplierMeta.isEmpty()) {
+                String level = levelMeta.get(0).asString();
+                double multiplier = multiplierMeta.get(0).asDouble();
+                
+                // 确认购买
+                confirmLevelPurchase(player, level, days, multiplier);
+            }
+        }
+    }
+    
+    private void confirmLevelPurchase(Player player, String level, int days, double multiplier) {
+        // 计算价格
+        double basePrice = plugin.getConfig().getDouble("prices." + days + "d", 0);
+        if (basePrice == 0) {
+            // 如果没有找到对应天数的价格，使用1d价格乘以天数
+            basePrice = plugin.getConfig().getDouble("prices.1d", 100) * days;
+        }
+        
+        double price = basePrice * multiplier;
+        
+        // 检查玩家是否有足够的钱
+        if (plugin.getEconomy().has(player, price)) {
+            // 扣款
+            plugin.getEconomy().withdrawPlayer(player, price);
+            
+            // 获取等级配置
+            ConfigurationSection levelConfig = plugin.getConfig().getConfigurationSection("protection-levels." + level);
+            boolean keepExp = levelConfig != null && levelConfig.getBoolean("keep-exp", false);
+            String particleEffect = levelConfig != null ? levelConfig.getString("particle-effect") : null;
+            boolean noDeathPenalty = levelConfig != null && levelConfig.getBoolean("no-death-penalty", false);
+            
+            // 添加保护，并存储保护等级信息
+            plugin.addProtection(player.getUniqueId(), days * 86400);
+            
+            // 保存保护等级到玩家数据
+            PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+            if (playerData != null) {
+                playerData.setProtectionLevel(level);
+                playerData.setKeepExp(keepExp);
+                playerData.setParticleEffect(particleEffect);
+                playerData.setNoDeathPenalty(noDeathPenalty);
+                plugin.savePlayerData(player.getUniqueId());
+            }
+            
+            // 发送成功消息
+            player.sendMessage(plugin.getMessages().getMessage("command.buy.success")
+                    .replace("%days%", String.valueOf(days))
+                    .replace("%price%", String.format("%.2f", price))
+                    .replace("%level%", WordUtils.capitalize(level)));
+            
+            // 返回主菜单
+            openMainMenu(player);
+        } else {
+            // 发送余额不足消息
+            player.sendMessage(plugin.getMessages().getMessage("command.buy.not-enough-money")
+                    .replace("%price%", String.format("%.2f", price)));
         }
     }
     
@@ -923,6 +990,141 @@ public class GUIManager implements Listener {
                     openMainMenu(player);
                 }
                 break;
+        }
+    }
+
+    // 重新添加丢失的handleAdminMenuClick方法
+    private void handleAdminMenuClick(Player player, int slot) {
+        switch (slot) {
+            case 11: // 玩家列表
+                openPlayerListMenu(player, 0);
+                break;
+                
+            case 13: // 批量增加
+                openBatchActionsMenu(player, true);
+                break;
+                
+            case 15: // 批量减少
+                openBatchActionsMenu(player, false);
+                break;
+                
+            case 22: // 重置所有数据
+                player.closeInventory();
+                player.performCommand("dk resetall");
+                break;
+                
+            case 31: // 返回
+                openMainMenu(player);
+                break;
+        }
+    }
+
+    // 重新添加丢失的handlePlayerListClick方法
+    private void handlePlayerListClick(Player player, int slot) {
+        if (slot >= 0 && slot < 45) {
+            // 玩家项目点击
+            Map<UUID, PlayerData> playerDataMap = plugin.getPlayerDataMap();
+            List<Map.Entry<UUID, PlayerData>> entries = new ArrayList<>(playerDataMap.entrySet());
+            
+            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
+            int startIndex = page * PLAYERS_PER_PAGE;
+            
+            if (startIndex + slot < entries.size()) {
+                Map.Entry<UUID, PlayerData> entry = entries.get(startIndex + slot);
+                UUID targetUUID = entry.getKey();
+                
+                // 打开玩家详情菜单
+                openPlayerDetailsMenu(player, targetUUID);
+            }
+        } else if (slot == 45) {
+            // 上一页
+            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
+            if (page > 0) {
+                openPlayerListMenu(player, page - 1);
+            }
+        } else if (slot == 53) {
+            // 下一页
+            int page = adminPageMap.getOrDefault(player.getUniqueId(), 0);
+            Map<UUID, PlayerData> playerDataMap = plugin.getPlayerDataMap();
+            int totalPages = (int) Math.ceil((double) playerDataMap.size() / PLAYERS_PER_PAGE);
+            
+            if (page < totalPages - 1) {
+                openPlayerListMenu(player, page + 1);
+            }
+        } else if (slot == 49) {
+            // 返回
+            openAdminMenu(player);
+        }
+    }
+
+    // 重新添加丢失的handleBatchActionsClick方法
+    private void handleBatchActionsClick(Player player, int slot) {
+        Messages messages = plugin.getMessages();
+        List<UUID> selected = selectedPlayers.getOrDefault(player.getUniqueId(), new ArrayList<>());
+        boolean isAddMode = player.hasMetadata("dk_batch_mode") && player.getMetadata("dk_batch_mode").get(0).asBoolean();
+        
+        if (slot >= 0 && slot < 45) {
+            // 玩家选择
+            List<Player> onlinePlayers = new ArrayList<>(Bukkit.getOnlinePlayers());
+            if (slot < onlinePlayers.size()) {
+                Player target = onlinePlayers.get(slot);
+                UUID targetUUID = target.getUniqueId();
+                
+                if (selected.contains(targetUUID)) {
+                    selected.remove(targetUUID);
+                } else {
+                    selected.add(targetUUID);
+                }
+                
+                openBatchActionsMenu(player, isAddMode);
+            }
+        } else {
+            switch (slot) {
+                case 46: // 全选
+                    selected.clear();
+                    for (Player online : Bukkit.getOnlinePlayers()) {
+                        selected.add(online.getUniqueId());
+                    }
+                    openBatchActionsMenu(player, isAddMode);
+                    break;
+                    
+                case 47: // 取消全选
+                    selected.clear();
+                    openBatchActionsMenu(player, isAddMode);
+                    break;
+                    
+                case 51: // 执行批量操作
+                    if (selected.isEmpty()) {
+                        player.sendMessage(messages.getMessage("gui.batch-actions.no-selection"));
+                        return;
+                    }
+                    
+                    player.closeInventory();
+                    
+                    // 构建玩家列表字符串
+                    StringBuilder playerList = new StringBuilder();
+                    for (UUID uuid : selected) {
+                        Player target = Bukkit.getPlayer(uuid);
+                        if (target != null) {
+                            if (playerList.length() > 0) {
+                                playerList.append(",");
+                            }
+                            playerList.append(target.getName());
+                        }
+                    }
+                    
+                    // 要求输入时长
+                    player.sendMessage(messages.getMessage("gui.batch-actions.enter-days"));
+                    
+                    // 设置元数据以便其他插件可以处理输入
+                    player.setMetadata("dk_bulk_mode", new FixedMetadataValue(plugin, isAddMode ? "add" : "remove"));
+                    player.setMetadata("dk_bulk_players", new FixedMetadataValue(plugin, playerList.toString()));
+                    break;
+                    
+                case 49: // 返回
+                    openAdminMenu(player);
+                    break;
+            }
         }
     }
 } 

@@ -16,6 +16,8 @@ import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.utils.Messages;
 import org.bukkit.ChatColor;
+import org.apache.commons.lang.WordUtils;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.*;
 
@@ -265,25 +267,63 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        int days;
+        // 检查是否使用了指定等级
+        String level = "basic"; // 默认等级
+        int days = 1; // 默认天数
+        
         if (args.length > 1) {
+            // 检查是否是数字（天数）
             try {
                 days = Integer.parseInt(args[1]);
                 if (days <= 0) {
                     player.sendMessage(messages.getMessage("command.buy.invalid-days"));
                     return true;
                 }
+                
+                // 如果指定了等级
+                if (args.length > 2) {
+                    level = args[2].toLowerCase();
+                }
             } catch (NumberFormatException e) {
-                player.sendMessage(messages.getMessage("command.buy.invalid-days"));
-                return true;
+                // 如果第一个参数不是数字，可能是等级名称
+                level = args[1].toLowerCase();
+                
+                // 如果指定了天数
+                if (args.length > 2) {
+                    try {
+                        days = Integer.parseInt(args[2]);
+                        if (days <= 0) {
+                            player.sendMessage(messages.getMessage("command.buy.invalid-days"));
+                            return true;
+                        }
+                    } catch (NumberFormatException ex) {
+                        player.sendMessage(messages.getMessage("command.buy.invalid-days"));
+                        return true;
+                    }
+                }
             }
-        } else {
-            days = 1; // 默认1天
         }
-
+        
+        // 获取保护等级配置
+        ConfigurationSection levelsSection = plugin.getConfig().getConfigurationSection("protection-levels");
+        if (levelsSection == null || !levelsSection.contains(level)) {
+            player.sendMessage(messages.getMessage("command.buy.invalid-level"));
+            return true;
+        }
+        
+        // 检查权限
+        ConfigurationSection levelConfig = levelsSection.getConfigurationSection(level);
+        String permission = levelConfig.getString("permissions");
+        if (permission != null && !player.hasPermission(permission)) {
+            player.sendMessage(messages.getMessage("command.no-permission"));
+            return true;
+        }
+        
+        // 计算价格
+        double priceMultiplier = levelConfig.getDouble("price-multiplier", 1.0);
         int seconds = days * 86400;
         double pricePerDay = plugin.getWorldPrice(player.getWorld());
-        double totalPrice = pricePerDay * days;
+        double totalPrice = pricePerDay * days * priceMultiplier;
         Economy economy = plugin.getEconomy();
 
         if (economy.getBalance(player) < totalPrice) {
@@ -292,11 +332,33 @@ public class DeathKeepCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        // 获取等级特性
+        boolean keepExp = levelConfig.getBoolean("keep-exp", false);
+        String particleEffect = levelConfig.getString("particle-effect");
+        boolean noDeathPenalty = levelConfig.getBoolean("no-death-penalty", false);
+        
+        // 扣款
         economy.withdrawPlayer(player, totalPrice);
+        
+        // 添加保护
         plugin.addProtection(player.getUniqueId(), seconds);
+        
+        // 保存保护等级信息
+        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        if (playerData != null) {
+            playerData.setProtectionLevel(level);
+            playerData.setKeepExp(keepExp);
+            playerData.setParticleEffect(particleEffect);
+            playerData.setNoDeathPenalty(noDeathPenalty);
+            plugin.savePlayerData(player.getUniqueId());
+        }
+        
+        // 发送成功消息
         player.sendMessage(messages.getMessage("command.buy.success", 
                 "days", String.valueOf(days),
-                "price", String.format("%.2f", totalPrice)));
+                "price", String.format("%.2f", totalPrice),
+                "level", WordUtils.capitalize(level)));
+        
         return true;
     }
 

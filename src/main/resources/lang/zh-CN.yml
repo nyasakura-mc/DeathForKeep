@@ -25,8 +25,10 @@ command:
   buy:
     invalid-time: "&c无效的时间格式！请使用 1d (1天), 12h (12小时), 30m (30分钟) 等格式。"
     not-enough-money: "&c你没有足够的金钱！你需要 %price% 金币。"
-    success: "&a你已成功购买 %days% 的死亡物品保护，花费 %price% 金币！"
+    success: "&a成功购买 &6%days% &a天的 &b%level% &a保护，花费了 &6%price% &a金币"
     world-price: "&7在当前世界购买保护的价格为: &e%price% &7金币/天"
+    invalid-days: "&c天数必须是正整数"
+    invalid-level: "&c无效的保护等级。可用的等级: basic, advanced, premium"
 
   check:
     specify-player: "&c请指定一个玩家名称！"
@@ -175,7 +177,7 @@ gui:
     settings-lore: "&7调整个人设置"
 
   buy:
-    title: "&6选择保护时长"
+    title: "&6购买死亡物品保护"
     one-day: "&a1天保护"
     one-day-lore: |
       &7价格: &6%price% 金币
@@ -307,6 +309,24 @@ gui:
       &7对方需要确认接受
     enter-days-add: "&e请在聊天框中输入要添加的天数，或输入'取消'终止操作"
     enter-days-remove: "&e请在聊天框中输入要减少的天数，或输入'取消'终止操作"
+
+  protection-level:
+    basic: "&a基础保护"
+    advanced: "&6高级保护"
+    premium: "&b尊贵保护"
+    basic-lore: |
+      &7基础保护，保留所有物品
+      &7价格: &6%price% &7/天
+      &e点击选择
+    advanced-lore: |
+      &7高级保护，保留所有物品和经验
+      &7价格: &6%price% &7/天
+      &e点击选择
+    premium-lore: |
+      &7尊贵保护，保留所有物品、经验，并避免死亡惩罚
+      &7价格: &6%price% &7/天
+      &e点击选择
+    duration-title: "&6选择%level%保护的天数"
 
 placeholder:
   time: "%time%"

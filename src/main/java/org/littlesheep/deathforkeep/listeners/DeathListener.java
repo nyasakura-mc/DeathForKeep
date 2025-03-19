@@ -7,6 +7,7 @@ package org.littlesheep.deathforkeep.listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,6 +19,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.utils.Messages;
+import org.littlesheep.deathforkeep.data.PlayerData;
+import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.Map;
 import java.util.UUID;
@@ -118,34 +121,85 @@ public class DeathListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        UUID playerUUID = player.getUniqueId();
-        Messages messages = plugin.getMessages();
+        UUID uuid = player.getUniqueId();
         
-        boolean hasProtection = plugin.hasActiveProtection(playerUUID);
-        
-        if (hasProtection) {
-            // 强制设置保持物品和经验
-            event.setKeepInventory(true);
-            event.setKeepLevel(true);
-            event.setDroppedExp(0);
-            event.getDrops().clear();
+        // 检查是否有保护
+        if (plugin.hasActiveProtection(uuid)) {
+            PlayerData playerData = plugin.getPlayerData(uuid);
             
-            // 发送消息给玩家
-            player.sendMessage(messages.getMessage("death.protected"));
-            
-            // 播放粒子效果
-            if (plugin.getConfig().getBoolean("particles.on-protection-used", true)) {
-                spawnProtectionParticles(player.getLocation());
-            }
-            
-            // 广播消息
-            broadcastDeathProtection(player);
-            
-            // 再次确认备份已存在
-            if (plugin.getConfig().getBoolean("use-inventory-backup", true) && !inventoryBackups.containsKey(playerUUID)) {
-                inventoryBackups.put(playerUUID, player.getInventory().getContents().clone());
-                armorBackups.put(playerUUID, player.getInventory().getArmorContents().clone());
-                expBackups.put(playerUUID, player.getTotalExperience());
+            if (playerData != null) {
+                // 获取保护等级
+                String level = playerData.getProtectionLevel();
+                ConfigurationSection levelConfig = null;
+                
+                if (level != null) {
+                    levelConfig = plugin.getConfig().getConfigurationSection("protection-levels." + level);
+                }
+                
+                // 保留经验值
+                boolean keepExp = playerData.isKeepExp() || 
+                                 (levelConfig != null && levelConfig.getBoolean("keep-exp", false));
+                if (keepExp) {
+                    event.setKeepLevel(true);
+                    event.setDroppedExp(0);
+                }
+                
+                // 避免死亡惩罚
+                boolean noDeathPenalty = playerData.isNoDeathPenalty() || 
+                                        (levelConfig != null && levelConfig.getBoolean("no-death-penalty", false));
+                if (noDeathPenalty) {
+                    // 避免其他死亡惩罚（例如饥饿值减少、耐久度减少等）
+                    // 这里可以添加相关实现
+                }
+                
+                // 保留物品
+                event.setKeepInventory(true);
+                event.getDrops().clear();
+                
+                // 播放粒子效果
+                String particleEffect = playerData.getParticleEffect();
+                if (particleEffect == null && levelConfig != null) {
+                    particleEffect = levelConfig.getString("particle-effect");
+                }
+                
+                if (particleEffect != null && plugin.areParticlesEnabled(uuid)) {
+                    try {
+                        final String effectName = particleEffect;
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                            try {
+                                Particle particle = Particle.valueOf(effectName.toUpperCase());
+                                player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), 
+                                                               50, 0.5, 0.5, 0.5, 0.1);
+                            } catch (Exception ex) {
+                                plugin.getColorLogger().error("无效的粒子效果类型: " + effectName);
+                            }
+                        }, 5L);
+                    } catch (Exception e) {
+                        plugin.getColorLogger().error("显示粒子效果出错: " + e.getMessage());
+                    }
+                }
+                
+                // 播放声音
+                if (plugin.getConfig().getBoolean("sounds.protection-used.enabled", true)) {
+                    String soundName = plugin.getConfig().getString("sounds.protection-used.sound", "ENTITY_TOTEM_USE");
+                    float volume = (float) plugin.getConfig().getDouble("sounds.protection-used.volume", 1.0);
+                    float pitch = (float) plugin.getConfig().getDouble("sounds.protection-used.pitch", 1.0);
+                    
+                    try {
+                        Sound sound = Sound.valueOf(soundName.toUpperCase());
+                        player.getWorld().playSound(player.getLocation(), sound, volume, pitch);
+                    } catch (Exception e) {
+                        plugin.getColorLogger().error("无效的声音类型: " + soundName);
+                    }
+                }
+                
+                // 发送消息
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    player.sendMessage(plugin.getMessages().getMessage("protection.activated"));
+                }, 20L);
+                
+                // 即时保存玩家数据，防止出现意外
+                plugin.savePlayerData(uuid);
             }
         }
     }

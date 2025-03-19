@@ -63,10 +63,6 @@ particles:
   status-change: true
   gain-protection: "TOTEM"
   lose-protection: "SMOKE_NORMAL"
-  offset-x: 0.8
-  offset-y: 1.5
-  offset-z: 0.8
-  speed: 0.2
   # 获取保护时显示粒子效果
   on-protection-gained:
     enabled: true

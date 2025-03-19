@@ -120,23 +120,43 @@ public class DatabaseManager {
     }
     
     public Map<UUID, PlayerData> loadAllPlayerData() {
-        Map<UUID, PlayerData> playerDataMap = new HashMap<>();
+        Map<UUID, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+        Connection connection = null;
+        PreparedStatement statement = null;
+        ResultSet resultSet = null;
         
-        try (Statement statement = connection.createStatement();
-             ResultSet rs = statement.executeQuery("SELECT * FROM player_data")) {
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement("SELECT * FROM player_data");
+            resultSet = statement.executeQuery();
             
-            while (rs.next()) {
-                UUID uuid = UUID.fromString(rs.getString("uuid"));
-                long expiryTime = rs.getLong("expiry_time");
-                boolean particlesEnabled = rs.getBoolean("particles_enabled");
-                String sharedWithStr = rs.getString("shared_with");
+            while (resultSet.next()) {
+                UUID playerUUID = UUID.fromString(resultSet.getString("uuid"));
+                long expiryTime = resultSet.getLong("expiry_time");
+                boolean active = resultSet.getBoolean("active");
+                boolean particlesEnabled = resultSet.getBoolean("particles_enabled");
+                String sharedWithStr = resultSet.getString("shared_with");
                 UUID sharedWith = sharedWithStr != null ? UUID.fromString(sharedWithStr) : null;
                 
-                PlayerData data = new PlayerData(uuid, expiryTime, particlesEnabled, sharedWith);
-                playerDataMap.put(uuid, data);
+                // 获取新增的保护等级相关数据
+                String protectionLevel = resultSet.getString("protection_level");
+                boolean keepExp = resultSet.getBoolean("keep_exp");
+                String particleEffect = resultSet.getString("particle_effect");
+                boolean noDeathPenalty = resultSet.getBoolean("no_death_penalty");
+                
+                PlayerData playerData = new PlayerData(playerUUID, expiryTime, active, sharedWith);
+                playerData.setParticlesEnabled(particlesEnabled);
+                playerData.setProtectionLevel(protectionLevel);
+                playerData.setKeepExp(keepExp);
+                playerData.setParticleEffect(particleEffect);
+                playerData.setNoDeathPenalty(noDeathPenalty);
+                
+                playerDataMap.put(playerUUID, playerData);
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "加载玩家数据时出错", e);
+            plugin.getColorLogger().error("加载所有玩家数据失败: " + e.getMessage());
+        } finally {
+            closeResources(connection, statement, resultSet);
         }
         
         return playerDataMap;
@@ -178,6 +198,128 @@ public class DatabaseManager {
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "更新共享设置时出错: " + uuid, e);
+        }
+    }
+    
+    public boolean createPlayerData(UUID playerUUID, long expiryTime, boolean active, boolean particlesEnabled, 
+                                  UUID sharedWith, String protectionLevel, boolean keepExp, 
+                                  String particleEffect, boolean noDeathPenalty) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement(
+                    "INSERT INTO player_data (uuid, expiry_time, active, particles_enabled, shared_with, " +
+                    "protection_level, keep_exp, particle_effect, no_death_penalty) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            
+            statement.setString(1, playerUUID.toString());
+            statement.setLong(2, expiryTime);
+            statement.setBoolean(3, active);
+            statement.setBoolean(4, particlesEnabled);
+            statement.setString(5, sharedWith != null ? sharedWith.toString() : null);
+            statement.setString(6, protectionLevel);
+            statement.setBoolean(7, keepExp);
+            statement.setString(8, particleEffect);
+            statement.setBoolean(9, noDeathPenalty);
+            
+            int result = statement.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            plugin.getColorLogger().error("创建玩家数据失败: " + e.getMessage());
+            return false;
+        } finally {
+            closeResources(connection, statement, null);
+        }
+    }
+    
+    public boolean updatePlayerData(UUID playerUUID, long expiryTime, boolean active, boolean particlesEnabled, 
+                                  UUID sharedWith, String protectionLevel, boolean keepExp, 
+                                  String particleEffect, boolean noDeathPenalty) {
+        Connection connection = null;
+        PreparedStatement statement = null;
+        
+        try {
+            connection = getConnection();
+            statement = connection.prepareStatement(
+                    "UPDATE player_data SET expiry_time = ?, active = ?, particles_enabled = ?, " +
+                    "shared_with = ?, protection_level = ?, keep_exp = ?, particle_effect = ?, " +
+                    "no_death_penalty = ? WHERE uuid = ?");
+            
+            statement.setLong(1, expiryTime);
+            statement.setBoolean(2, active);
+            statement.setBoolean(3, particlesEnabled);
+            statement.setString(4, sharedWith != null ? sharedWith.toString() : null);
+            statement.setString(5, protectionLevel);
+            statement.setBoolean(6, keepExp);
+            statement.setString(7, particleEffect);
+            statement.setBoolean(8, noDeathPenalty);
+            statement.setString(9, playerUUID.toString());
+            
+            int result = statement.executeUpdate();
+            return result > 0;
+        } catch (SQLException e) {
+            plugin.getColorLogger().error("更新玩家数据失败: " + e.getMessage());
+            return false;
+        } finally {
+            closeResources(connection, statement, null);
+        }
+    }
+    
+    public void setupTables() {
+        Connection connection = null;
+        Statement statement = null;
+        
+        try {
+            connection = getConnection();
+            statement = connection.createStatement();
+            
+            // 创建玩家数据表
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS player_data (" +
+                    "uuid VARCHAR(36) PRIMARY KEY, " +
+                    "expiry_time BIGINT, " +
+                    "active BOOLEAN, " +
+                    "particles_enabled BOOLEAN DEFAULT TRUE, " +
+                    "shared_with VARCHAR(36), " +
+                    "protection_level VARCHAR(50), " +
+                    "keep_exp BOOLEAN DEFAULT FALSE, " +
+                    "particle_effect VARCHAR(50), " +
+                    "no_death_penalty BOOLEAN DEFAULT FALSE" +
+                    ")");
+            
+            // 检查是否需要更新表结构添加新列
+            ResultSet rs = connection.getMetaData().getColumns(null, null, "player_data", "protection_level");
+            if (!rs.next()) {
+                // 添加新列
+                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN protection_level VARCHAR(50)");
+                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN keep_exp BOOLEAN DEFAULT FALSE");
+                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN particle_effect VARCHAR(50)");
+                statement.executeUpdate("ALTER TABLE player_data ADD COLUMN no_death_penalty BOOLEAN DEFAULT FALSE");
+                plugin.getColorLogger().info("数据库表结构已更新，添加了保护等级相关字段");
+            }
+            rs.close();
+            
+        } catch (SQLException e) {
+            plugin.getColorLogger().error("设置数据库表失败: " + e.getMessage());
+        } finally {
+            closeResources(connection, statement, null);
+        }
+    }
+    
+    private void closeResources(Connection connection, Statement statement, ResultSet resultSet) {
+        try {
+            if (resultSet != null) {
+                resultSet.close();
+            }
+            if (statement != null) {
+                statement.close();
+            }
+            if (connection != null && !connection.isClosed()) {
+                connection.close();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "关闭资源时出错: " + e.getMessage(), e);
         }
     }
 } 

@@ -7,20 +7,25 @@ package org.littlesheep.deathforkeep.data;
 import java.util.UUID;
 
 public class PlayerData {
-    private final UUID uuid;
+    private final UUID playerUUID;
     private long expiryTime;
-    private boolean particlesEnabled;
+    private boolean active;
     private UUID sharedWith;
+    private boolean particlesEnabled = true;
+    private String protectionLevel;
+    private boolean keepExp;
+    private String particleEffect;
+    private boolean noDeathPenalty;
     
-    public PlayerData(UUID uuid, long expiryTime, boolean particlesEnabled, UUID sharedWith) {
-        this.uuid = uuid;
+    public PlayerData(UUID playerUUID, long expiryTime, boolean active, UUID sharedWith) {
+        this.playerUUID = playerUUID;
         this.expiryTime = expiryTime;
-        this.particlesEnabled = particlesEnabled;
+        this.active = active;
         this.sharedWith = sharedWith;
     }
     
     public UUID getUuid() {
-        return uuid;
+        return playerUUID;
     }
     
     public long getExpiryTime() {
@@ -51,5 +56,37 @@ public class PlayerData {
         long currentTime = System.currentTimeMillis() / 1000;
         boolean active = expiryTime > currentTime;
         return active;
+    }
+
+    public String getProtectionLevel() {
+        return protectionLevel;
+    }
+
+    public void setProtectionLevel(String protectionLevel) {
+        this.protectionLevel = protectionLevel;
+    }
+
+    public boolean isKeepExp() {
+        return keepExp;
+    }
+
+    public void setKeepExp(boolean keepExp) {
+        this.keepExp = keepExp;
+    }
+
+    public String getParticleEffect() {
+        return particleEffect;
+    }
+
+    public void setParticleEffect(String particleEffect) {
+        this.particleEffect = particleEffect;
+    }
+
+    public boolean isNoDeathPenalty() {
+        return noDeathPenalty;
+    }
+
+    public void setNoDeathPenalty(boolean noDeathPenalty) {
+        this.noDeathPenalty = noDeathPenalty;
     }
 } 
