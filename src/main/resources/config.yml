@@ -35,8 +35,23 @@ protection-levels:
 
 # 死亡设置
 broadcast-range: world  # 广播范围: world, server, none
-use-inventory-backup: true  # 开启物品备份恢复机制，解决与其他插件冲突导致的物品丢失
+use-inventory-backup: true  # 开启物品备份恢复机制，解决与其他插件冲突导致的物品丢失（强烈建议保持开启）
 auto-equip-armor: true      # 死亡重生后自动穿上装备
+
+# 备份恢复设置 - 应对与其他插件的冲突
+backup:
+  enabled: true             # 是否启用高级备份系统
+  comprehensive: true       # 是否进行全面备份（物品、经验、状态、末影箱等）
+  retry-attempts: 5         # 恢复失败后的重试次数
+  final-delay: 40           # 最终恢复检查的延迟（刻）
+  cleanup-time: 3600        # 备份数据保留时间（秒）
+  debug-mode: false         # 是否启用调试模式，输出详细日志
+  # 定期备份设置
+  periodic:
+    enabled: true           # 是否启用定期备份
+    interval: 20            # 备份间隔（刻）- 20刻 = 1秒
+    only-protected: true    # 是否只备份有保护的玩家
+    save-on-death: true     # 是否在死亡时刻立即备份（无论定期备份是否启用）
 
 # 优先保护物品设置
 # 如果保护失效，优先保护下列物品

@@ -37,11 +37,7 @@ public class GUIManager implements Listener {
     private final Map<UUID, Integer> adminPageMap = new HashMap<>();
     private final Map<UUID, List<UUID>> selectedPlayers = new HashMap<>();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private final Map<UUID, Long> lastClickTime = new HashMap<>();
-    
     private static final int PLAYERS_PER_PAGE = 45;
-    private static final long CLICK_COOLDOWN = 500;
-    
     public enum GUIType {
         MAIN_MENU,
         DURATION_MENU,

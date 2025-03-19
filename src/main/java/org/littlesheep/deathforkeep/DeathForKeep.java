@@ -17,7 +17,6 @@ import org.littlesheep.deathforkeep.data.DatabaseManager;
 import org.littlesheep.deathforkeep.data.PlayerData;
 import org.littlesheep.deathforkeep.gui.GUIManager;
 import org.littlesheep.deathforkeep.hooks.PlaceholderHook;
-import org.littlesheep.deathforkeep.listeners.DeathListener;
 import org.littlesheep.deathforkeep.listeners.JoinListener;
 import org.littlesheep.deathforkeep.listeners.ChatListener;
 import org.littlesheep.deathforkeep.service.ProtectionService;
@@ -43,6 +42,9 @@ public final class DeathForKeep extends JavaPlugin {
     private ProtectionService protectionService;
 
     private Map<UUID, PlayerData> playerDataMap = new ConcurrentHashMap<>();
+
+    // 声明DeathListener字段
+    private org.littlesheep.deathforkeep.listeners.DeathListener deathListener;
 
     @Override
     public void onEnable() {
@@ -83,7 +85,7 @@ public final class DeathForKeep extends JavaPlugin {
         registerCommands();
         
         // 注册监听器
-        DeathListener deathListener = new DeathListener(this);
+        deathListener = new org.littlesheep.deathforkeep.listeners.DeathListener(this);
         getServer().getPluginManager().registerEvents(deathListener, this);
         getServer().getPluginManager().registerEvents(new JoinListener(this), this);
         getServer().getPluginManager().registerEvents(guiManager, this);
@@ -141,6 +143,12 @@ public final class DeathForKeep extends JavaPlugin {
             if (bossBarManager != null) {
                 bossBarManager.stopTask();
                 colorLogger.info("BossBar任务已取消");
+            }
+            
+            // 停止死亡监听器的备份任务
+            if (deathListener != null) {
+                deathListener.onDisable();
+                colorLogger.info("死亡监听器任务已取消");
             }
             
             // 取消所有可能遗留的任务

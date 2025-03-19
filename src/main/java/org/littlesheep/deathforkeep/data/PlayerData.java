@@ -9,7 +9,6 @@ import java.util.UUID;
 public class PlayerData {
     private final UUID playerUUID;
     private long expiryTime;
-    private boolean active;
     private UUID sharedWith;
     private boolean particlesEnabled = true;
     private String protectionLevel;
@@ -20,7 +19,6 @@ public class PlayerData {
     public PlayerData(UUID playerUUID, long expiryTime, boolean active, UUID sharedWith) {
         this.playerUUID = playerUUID;
         this.expiryTime = expiryTime;
-        this.active = active;
         this.sharedWith = sharedWith;
     }
     
