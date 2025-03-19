@@ -226,9 +226,10 @@ gui:
   player-list:
     title: "&6Player List - Page %page%"
     player-name: "&aPlayer: %player%"
+    expired: "&cExpired"
     expires: "&7Expires: &e%time%"
     shared-with: "&7Shared with: &e%player%"
-    particles: "&7Particle effects: %status%"
+    particles: "&7Particles: %status%"
     add-protection: "&aAdd Protection"
     add-protection-lore: "&7Add protection for this player"
     remove-protection: "&cRemove Protection"

@@ -226,6 +226,7 @@ gui:
   player-list:
     title: "&6玩家列表 - 第 %page% 页"
     player-name: "&a玩家: %player%"
+    expired: "&c已过期"
     expires: "&7到期时间: &e%time%"
     shared-with: "&7共享给: &e%player%"
     particles: "&7粒子效果: %status%"
