@@ -19,17 +19,17 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.littlesheep.deathforkeep.DeathForKeep;
 import org.littlesheep.deathforkeep.utils.Messages;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DeathListener implements Listener {
 
     private final DeathForKeep plugin;
-    // 用于存储玩家的物品备份
-    private final Map<UUID, ItemStack[]> inventoryBackups = new HashMap<>();
-    private final Map<UUID, ItemStack[]> armorBackups = new HashMap<>();
-    private final Map<UUID, Integer> expBackups = new HashMap<>();
+    // 用于存储玩家的物品备份，使用ConcurrentHashMap提高并发性能
+    private final Map<UUID, ItemStack[]> inventoryBackups = new ConcurrentHashMap<>();
+    private final Map<UUID, ItemStack[]> armorBackups = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> expBackups = new ConcurrentHashMap<>();
 
     public DeathListener(DeathForKeep plugin) {
         this.plugin = plugin;

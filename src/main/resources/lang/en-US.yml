@@ -1,0 +1,346 @@
+# DeathForKeep English Language File
+version: 3
+
+general:
+  prefix: "&6[DeathKeep] &r"
+
+plugin:
+  enabled: "DeathForKeep plugin has been enabled!"
+  disabled: "DeathForKeep plugin has been disabled!"
+  reloaded: "DeathForKeep plugin has been reloaded!"
+  update-available: "&aNew version v%version% available!\n&aDownload at: %download%"
+
+economy:
+  not-found: "Vault economy system not found! Plugin will be disabled."
+
+command:
+  player-only: "&cThis command can only be used by players!"
+  no-permission: "&cYou don't have permission to use this command!"
+  player-not-found: "&cPlayer %player% not found!"
+  unknown: "&cUnknown command. Type /deathkeep help for help."
+  cancelled: "&cOperation cancelled."
+  error: "&cAn error occurred while executing the command."
+  invalid-duration: "&cPlease enter a valid number of days (integer)."
+
+  buy:
+    invalid-time: "&cInvalid time format! Please use formats like 1d (1 day), 12h (12 hours), 30m (30 minutes)."
+    not-enough-money: "&cYou don't have enough money! You need %price% coins."
+    success: "&aYou have successfully purchased %days% of death item protection for %price% coins!"
+    world-price: "&7Protection price in current world: &e%price% &7coins/day"
+
+  check:
+    specify-player: "&cPlease specify a player name!"
+    active: "&a%player%'s death item protection will expire at %time%."
+    expired: "&c%player%'s death item protection has expired."
+    no-protection: "&c%player% has no death item protection."
+    particles-enabled: "&aParticle effects enabled."
+    particles-disabled: "&cParticle effects disabled."
+    shared-with: "&aProtection shared with %player%."
+    shared-from: "&aYou are using shared protection from %player%."
+    has-protection: "&aPlayer %player% currently has death protection, time remaining: %time%"
+    has-shared-protection: "&aPlayer %player% currently has death protection shared from %sharer%"
+
+  add:
+    usage: "&cUsage: /deathkeep add <player> <time>"
+    invalid-time: "&cInvalid time format! Please use formats like 1d (1 day), 12h (12 hours), 30m (30 minutes)."
+    success: "&aYou have added %days% of death item protection for %player%."
+    notify: "&aAn admin has added %days% of death item protection for you."
+    extended: "&aProtection time extended by %days% for %player%."
+
+  remove:
+    usage: "&cUsage: /deathkeep remove <player>"
+    success: "&aYou have removed %player%'s death item protection."
+    notify: "&cYour death item protection has been removed by an admin."
+    no-protection: "&cThis player has no valid protection to remove."
+
+  reload:
+    success: "&aDeathForKeep configuration reloaded!"
+    error: "&cError occurred while reloading configuration, please check console."
+
+  particles:
+    enabled: "&aParticle effects enabled!"
+    disabled: "&cParticle effects disabled!"
+    toggle: "&7Particle effects %status%"
+
+  share:
+    usage: "&cUsage: /deathkeep share <player>"
+    self: "&cYou cannot share protection with yourself!"
+    no-protection: "&cYou don't have valid protection to share!"
+    already-shared: "&cYou are already sharing your protection with %player%!"
+    success: "&aSuccessfully shared your death protection with %player%"
+    notify: "&a%player% is now sharing their death item protection with you!"
+    request-sent: "&aSharing request sent to %player%, fee: %fee% coins."
+    request-received: "&a%player% wants to share their death item protection with you. Please choose whether to accept."
+    request-expired: "&cSharing request to %player% has expired."
+    request-expired-target: "&cSharing request from %player% has expired."
+    no-pending-request: "&cYou have no pending share requests."
+    not-enough-money: "&cYou don't have enough money to pay the fee! Need %fee% coins."
+    accepted: "&aYou have accepted %player%'s sharing request."
+    accepted-sender: "&a%player% has accepted your sharing request."
+    denied-target: "&cYou have denied the sharing request."
+    denied-sender: "&c%player% denied your sharing request."
+    sender-offline: "&cRequest sender is offline."
+    protection-expired: "&cRequest sender's protection has expired."
+    protection-expired-sender: "&cYour protection has expired, cannot complete sharing."
+    confirm-title: "&6Confirm Share Request - %player%"
+    confirm-accept: "&aAccept"
+    confirm-deny: "&cDeny"
+    success-target: "&aYou are now receiving death item protection from %player%!"
+    fee-info: "&7Sharing fee: &e%fee% &7coins (%percentage%%)"
+    received: "&a%player% has shared death protection with you"
+    rejected: "&c%player% rejected your protection sharing request"
+    player-offline: "&cTarget player is offline"
+
+  find:
+    usage: "&cUsage: /deathkeep find <player>"
+    result: "&aProtection info for player %player%:"
+    status: "&7Status: %status%"
+    expiry: "&7Expiry time: &e%time%"
+    shared-with: "&7Shared with: &e%player%"
+    shared-from: "&7Shared from: &e%player%"
+    particles: "&7Particle effects: %status%"
+    world-price: "&7Current world price: &e%price% &7coins/day"
+
+  resetall:
+    confirm: "&cWarning: This will reset all player data. Type /deathkeep resetall confirm to confirm."
+    success: "&aAll player data has been reset."
+    cancelled: "&cReset operation cancelled."
+
+  bulk:
+    usage: "&cUsage: /dk bulk <add|remove> <duration> <player list>"
+    invalid-operation: "&cInvalid operation, use add or remove"
+    no-players-found: "&cNo valid players found"
+    add-success: "&aSuccessfully added %duration% protection duration for %count% players"
+    remove-success: "&aSuccessfully removed %duration% protection duration for %count% players"
+    failed-players: "&cPlayers not found: %players%"
+
+death:
+  protected: "&aYour items have been protected!"
+  not-protected: "&cYour items have been dropped!"
+  broadcast: "&e%player% died, but their items were protected!"
+  shared-protected: "&aYour items were protected by shared protection from %player%!"
+
+bossbar:
+  hour: "&eYour death protection will expire in 1 hour!"
+  ten-minutes: "&cYour death protection will expire in 10 minutes!"
+  expired: "&cYour death protection has expired!"
+  shared:
+    hour: "&eDeath protection shared by %player% will expire in 1 hour!"
+    ten-minutes: "&cDeath protection shared by %player% will expire in 10 minutes!"
+    expired: "&cDeath protection shared by %player% has expired!"
+  protection-gained: "&aGained death protection! Valid until: %time%"
+  protection-shared: "&a%player% has shared death protection with you! Valid until: %time%"
+
+time:
+  days: "%d days"
+  hours: "%d hours"
+  minutes: "%d minutes"
+  seconds: "%d seconds"
+  expired: "Expired"
+  permanent: "Permanent"
+  format: "%days%%hours%%minutes%%seconds%"
+
+gui:
+  main:
+    title: "&6Death Item Protection"
+    buy: "&aBuy Protection"
+    buy-lore: |
+      &7Base price: &6%price% &7coins/day
+      &eLeft click to enter purchase menu
+    particles: "&eParticle Effects"
+    particles-lore: |
+      &7Current status: %status%
+      &7Click to toggle particle effects
+    help: "&eHelp Information"
+    help-lore: |
+      &7Click to view help
+      &7Contains all command descriptions
+    status: "&fProtection Status"
+    status-lore: |
+      &7Current status: %status%
+      &7Time remaining: %time%
+    status-active: "&aActive"
+    status-inactive: "&cInactive"
+    status-expired: "&cExpired"
+    share: "&dShare Protection"
+    share-lore: |
+      &7Share your protection with other players
+      &7Fee: &e%fee%% &7of protection value
+      &7Click to select player
+    admin: "&cAdmin Panel"
+    admin-lore: |
+      &7Manage all player protections
+      &7Click to open admin panel
+    settings: "&eSettings"
+    settings-lore: "&7Adjust personal settings"
+
+  buy:
+    title: "&6Select Protection Duration"
+    one-day: "&a1 Day Protection"
+    one-day-lore: |
+      &7Price: &6%price% coins
+      &7Click to buy 1 day protection
+    seven-days: "&a7 Days Protection"
+    seven-days-lore: |
+      &7Price: &6%price% coins
+      &7Click to buy 7 days protection
+    thirty-days: "&a30 Days Protection"
+    thirty-days-lore: |
+      &7Price: &6%price% coins
+      &7Click to buy 30 days protection
+    click-to-buy: "&7Click to buy"
+    back: "&cBack"
+    back-lore: "&7Return to main menu"
+    custom: "&aCustom Duration"
+    custom-lore: |
+      &7Click to enter custom duration
+      &7Supported formats: 1d, 12h, 30m
+    confirm-title: "&6Confirm Purchase"
+    confirm-lore: |
+      &7Duration: &e%time%
+      &7Price: &e%price% &7coins
+      &7Click to confirm purchase
+    custom-message: "&aPlease enter the number of days you want to purchase in chat"
+
+  admin-menu:
+    title: "&6Death Item Protection - Admin Panel"
+    player-list: "&bPlayer List"
+    player-list-lore: "&7View protection status of all players"
+    batch-actions: "&aBatch Operations"
+    batch-actions-lore: "&7Perform operations on multiple players"
+    reload: "&dReload Configuration"
+    reload-lore: "&7Reload plugin configuration"
+    reset-all: "&cReset All Data"
+    reset-all-lore: "&7Reset all player data"
+    back: "&cBack"
+    back-lore: "&7Return to main menu"
+    batch-add: "&aBatch Add Protection"
+    batch-add-lore: |
+      &7Add protection duration for multiple players
+      &7Click to open batch add interface
+    batch-remove: "&cBatch Remove Protection"
+    batch-remove-lore: |
+      &7Remove protection duration for multiple players
+      &7Click to open batch remove interface
+
+  player-list:
+    title: "&6Player List - Page %page%"
+    player-name: "&aPlayer: %player%"
+    expires: "&7Expires: &e%time%"
+    shared-with: "&7Shared with: &e%player%"
+    particles: "&7Particle effects: %status%"
+    add-protection: "&aAdd Protection"
+    add-protection-lore: "&7Add protection for this player"
+    remove-protection: "&cRemove Protection"
+    remove-protection-lore: "&7Remove protection from this player"
+    previous-page: "&ePrevious Page"
+    next-page: "&eNext Page"
+    back: "&cBack"
+    back-lore: "&7Return to admin panel"
+    search: "&fSearch Player"
+    search-lore: "&7Click to enter player name"
+
+  batch-actions:
+    title: "&6Death Item Protection - Batch Operations"
+    player-name: "&b%player%"
+    selected: "&aSelected"
+    not-selected: "&cNot Selected"
+    click-to-toggle: "&7Click to toggle selection"
+    add-protection: "&aBatch Add Protection"
+    add-protection-lore: "&7Add protection for all selected players"
+    remove-protection: "&cBatch Remove Protection"
+    remove-protection-lore: "&7Remove protection from all selected players"
+    enter-days: "&ePlease enter the number of days to add/remove in chat, or type 'cancel' to abort"
+    no-selection: "&cYou haven't selected any players!"
+    removed: "&aRemoved protection from %count% players"
+    added: "&aAdded protection for %count% players"
+    select-all: "&aSelect All"
+    select-all-lore: "&7Select all players"
+    deselect-all: "&cDeselect All"
+    deselect-all-lore: "&7Deselect all players"
+    add-title: "&aBatch Add Protection"
+    remove-title: "&cBatch Remove Protection"
+
+  settings:
+    title: "&6Death Item Protection - Settings"
+    particles: "&bParticle Effects"
+    particles-lore: |
+      &7Current status: %status%
+      &7Click to toggle
+    notifications: "&eNotification Settings"
+    notifications-lore: |
+      &7Expiry reminders: %expiry%
+      &7BossBar alerts: %bossbar%
+      &7Click to toggle
+    back: "&cBack"
+    back-lore: "&7Return to main menu"
+
+  common:
+    back: "&cBack"
+    back-lore: "&7Return to previous menu"
+    enabled: "&aEnabled"
+    disabled: "&cDisabled"
+    confirm: "&aConfirm"
+    cancel: "&cCancel"
+    previous-page: "&ePrevious Page"
+    next-page: "&eNext Page"
+    click-to-toggle: "&7Click to toggle"
+
+  player-details:
+    title: "&6Player Details: %player%"
+    status: "&fProtection Status"
+    status-lore: |
+      &7Current status: %status%
+      &7Time remaining: %time%
+    add-protection: "&aAdd Protection"
+    add-protection-lore: |
+      &7Add protection duration for this player
+      &7Enter days in chat after clicking
+    remove-protection: "&cRemove Protection"
+    remove-protection-lore: |
+      &7Reduce protection duration for this player
+      &7Enter days in chat after clicking
+    share-protection: "&eShare Protection"
+    share-protection-lore: |
+      &7Share your protection with this player
+      &7They must confirm to accept
+    enter-days-add: "&ePlease enter the number of days to add in chat, or type 'cancel' to abort"
+    enter-days-remove: "&ePlease enter the number of days to remove in chat, or type 'cancel' to abort"
+
+placeholder:
+  time: "%time%"
+  no-protection: "No Protection"
+  status-active: "Active"
+  status-expired: "Expired"
+  status-none: "None"
+  shared-with: "Shared with %player%"
+  shared-from: "From %player%"
+  not-shared: "Not Shared"
+
+database:
+  connecting: "Connecting to database..."
+  connected: "Database connection successful!"
+  error: "Database connection failed: %error%"
+  saving: "Saving data..."
+  saved: "Data saved!"
+  loading: "Loading data..."
+  loaded: "Data loaded!"
+
+commands:
+  help:
+    title: "&6=== DeathKeep Help ==="
+    lines:
+      - "&a/dk buy [days] &7- Buy item drop protection for specified days"
+      - "&a/dk gui &7- Open graphical interface"
+      - "&a/dk help &7- View help"
+      - "&a/dk particles &7- Toggle death drop effects"
+      - "&c/dk bulk add <duration> <players> &7- Batch add duration (Admin)"
+      - "&c/dk bulk remove <duration> <players> &7- Batch remove duration (Admin)"
+      - "&c/dk resetall &7- Reset all data (Admin)"
+      - "&c/dk check <player> &7- Check player protection status"
+      - "&c/dk find <player> &7- Find player protection details"
+      - "&c/dk share <player> &7- Share protection with other players"
+      - "&c/dk add <player> <duration> &7- Add protection for player"
+      - "&c/dk remove <player> &7- Remove player's protection"
+      - "&c/dk reload &7- Reload plugin configuration"
+      - "&c/dk resetall &7- Reset all data (Admin)" 

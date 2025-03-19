@@ -27,6 +27,8 @@ DeathForKeep是一个Minecraft Bukkit/Spigot服务器插件，提供死亡物品
 - `/deathkeep remove <玩家>` - (管理员) 移除玩家的保护
 - `/deathkeep reload` - (管理员) 重新加载插件配置
 - `/deathkeep find <玩家>` - (管理员) 查找玩家的保护详情
+- `/deathkeep bulk add <时长> <玩家列表>` - (管理员) 批量为多个玩家添加保护时间
+- `/deathkeep bulk remove <时长> <玩家列表>` - (管理员) 批量移除多个玩家的保护时间
 - `/deathkeep resetall` - (管理员) 重置所有玩家数据
 
 ## 权限

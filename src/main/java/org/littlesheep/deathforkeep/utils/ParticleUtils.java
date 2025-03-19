@@ -4,13 +4,21 @@
  */
 package org.littlesheep.deathforkeep.utils;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.littlesheep.deathforkeep.DeathForKeep;
 
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ParticleUtils {
+
+    private static final Random random = new Random();
+    private static final ConcurrentHashMap<String, Integer> activeEffects = new ConcurrentHashMap<>();
 
     /**
      * 播放共享保护成功的粒子效果
@@ -50,85 +58,183 @@ public class ParticleUtils {
     }
     
     /**
-     * 播放获取保护时的持续粒子效果
-     * 
+     * 播放保护获得时的粒子效果
      * @param plugin 插件实例
      * @param player 玩家
      * @param duration 持续时间（秒）
      */
     public static void playProtectionGainedEffect(DeathForKeep plugin, Player player, int duration) {
-        // 决定使用哪个配置部分
-        String configSection = "particles.on-protection-gained";
+        if (player == null || !player.isOnline()) return;
         
-        // 检查调用堆栈以确定是在切换粒子还是获得保护时调用的
-        // 这种方法不是最理想的，但可以工作
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (StackTraceElement element : stackTrace) {
-            if (element.getMethodName().equals("toggleParticles") || 
-                element.getMethodName().equals("handleParticles")) {
-                configSection = "particles.on-toggle";
-                break;
-            }
-        }
+        String effectId = player.getUniqueId().toString() + "-gain-" + System.currentTimeMillis();
+        String particleType = plugin.getConfig().getString("particles.on-protection-gained.type", "TOTEM");
+        int count = plugin.getConfig().getInt("particles.on-protection-gained.count", 200);
         
-        if (!plugin.getConfig().getBoolean(configSection + ".enabled", true)) {
-            return;
-        }
-        
-        String particleType = plugin.getConfig().getString(configSection + ".type", "TOTEM");
-        final int count = plugin.getConfig().getInt(configSection + ".count", 100);
-        final double offsetX = plugin.getConfig().getDouble("particles.offset-x", 0.8);
-        final double offsetY = plugin.getConfig().getDouble("particles.offset-y", 1.5);
-        final double offsetZ = plugin.getConfig().getDouble("particles.offset-z", 0.8);
-        final double speed = plugin.getConfig().getDouble("particles.speed", 0.2);
-        
-        // 确定粒子类型
-        Particle particleToUse;
         try {
-            particleToUse = Particle.valueOf(particleType);
-        } catch (IllegalArgumentException e) {
-            particleToUse = Particle.TOTEM;
-        }
-        
-        // 使用final变量存储粒子类型，以便在匿名内部类中使用
-        final Particle finalParticle = particleToUse;
-        
-        // 立即显示一次粒子爆发
-        Location initialLoc = player.getLocation().add(0, 1, 0);
-        player.getWorld().spawnParticle(finalParticle, initialLoc, count, offsetX, offsetY, offsetZ, speed);
-        
-        // 创建持续显示粒子的任务
-        new BukkitRunnable() {
-            int remainingTicks = duration * 20; // 转换为tick (20 tick = 1秒)
+            Particle particle = Particle.valueOf(particleType);
+            AtomicInteger timer = new AtomicInteger(0);
             
-            @Override
-            public void run() {
-                if (remainingTicks <= 0 || !player.isOnline()) {
-                    this.cancel();
-                    return;
-                }
-                
-                Location loc = player.getLocation().add(0, 1, 0);
-                // 随着时间推移，逐渐减少粒子数量，制造渐隐效果
-                int currentCount = (int)(count / 20.0 * ((double)remainingTicks / (duration * 20.0) + 0.5));
-                player.getWorld().spawnParticle(finalParticle, loc, currentCount, offsetX, offsetY, offsetZ, speed);
-                
-                // 每5ticks产生一次环形粒子
-                if (remainingTicks % 5 == 0) {
-                    double radius = 1.0;
-                    for (int i = 0; i < 12; i++) {
-                        double angle = 2 * Math.PI * i / 12;
-                        Location circleLoc = loc.clone().add(
-                            radius * Math.cos(angle), 
-                            0.2, 
-                            radius * Math.sin(angle)
-                        );
-                        player.getWorld().spawnParticle(finalParticle, circleLoc, 2, 0.1, 0.1, 0.1, 0.05);
+            // 取消可能存在的同类效果
+            if (activeEffects.containsKey(player.getUniqueId().toString() + "-gain")) {
+                Bukkit.getScheduler().cancelTask(activeEffects.get(player.getUniqueId().toString() + "-gain"));
+            }
+            
+            // 创建新效果
+            int taskId = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline() || timer.incrementAndGet() > duration) {
+                        this.cancel();
+                        activeEffects.remove(effectId);
+                        return;
+                    }
+                    
+                    Location loc = player.getLocation().add(0, 1, 0);
+                    
+                    // 创建更加复杂的粒子效果
+                    switch (particle) {
+                        case TOTEM:
+                            playTotemParticles(player, count);
+                            break;
+                        case FLAME:
+                            playFlameParticles(player, count);
+                            break;
+                        case HEART:
+                            playHeartParticles(player, count);
+                            break;
+                        case PORTAL:
+                            playPortalParticles(player, count);
+                            break;
+                        default:
+                            player.getWorld().spawnParticle(particle, loc, count, 0.5, 1.0, 0.5, 0.1);
+                            break;
                     }
                 }
-                
-                remainingTicks--;
-            }
-        }.runTaskTimer(plugin, 0L, 1L);
+            }.runTaskTimerAsynchronously(plugin, 0L, 10L).getTaskId();
+            
+            // 记录效果ID
+            activeEffects.put(effectId, taskId);
+            
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("无效的粒子类型: " + particleType);
+            Location loc = player.getLocation().add(0, 1, 0);
+            player.getWorld().spawnParticle(Particle.TOTEM, loc, count, 0.5, 1.0, 0.5, 0.1);
+        }
+    }
+    
+    /**
+     * 播放图腾粒子效果
+     */
+    private static void playTotemParticles(Player player, int count) {
+        Location center = player.getLocation().add(0, 1, 0);
+        
+        // 螺旋上升效果
+        for (int i = 0; i < count / 2; i++) {
+            double angle = (i * (Math.PI * 2) / 20);
+            double radius = 0.8;
+            double height = (i % 20) * 0.1;
+            
+            double x = center.getX() + radius * Math.cos(angle);
+            double y = center.getY() + height;
+            double z = center.getZ() + radius * Math.sin(angle);
+            
+            Location particleLoc = new Location(center.getWorld(), x, y, z);
+            center.getWorld().spawnParticle(Particle.TOTEM, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // 爆发效果
+        center.getWorld().spawnParticle(Particle.TOTEM, center, count / 2, 0.5, 1.0, 0.5, 0.2);
+    }
+    
+    /**
+     * 播放火焰粒子效果
+     */
+    private static void playFlameParticles(Player player, int count) {
+        Location center = player.getLocation().add(0, 1, 0);
+        
+        // 上升的火焰圆环
+        for (int i = 0; i < count / 3; i++) {
+            double angle = (i * (Math.PI * 2) / 20);
+            double radius = 0.8 + (random.nextDouble() * 0.3);
+            double height = (i % 10) * 0.2;
+            
+            double x = center.getX() + radius * Math.cos(angle);
+            double y = center.getY() + height;
+            double z = center.getZ() + radius * Math.sin(angle);
+            
+            Location particleLoc = new Location(center.getWorld(), x, y, z);
+            center.getWorld().spawnParticle(Particle.FLAME, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // 中心火焰
+        center.getWorld().spawnParticle(Particle.FLAME, center, count / 3, 0.2, 0.5, 0.2, 0.05);
+        
+        // 爆发火花
+        center.getWorld().spawnParticle(Particle.LAVA, center, 10, 0.5, 0.5, 0.5, 0);
+    }
+    
+    /**
+     * 播放心形粒子效果
+     */
+    private static void playHeartParticles(Player player, int count) {
+        Location center = player.getLocation().add(0, 1.5, 0);
+        
+        // 心形轮廓
+        for (int i = 0; i < count / 2; i++) {
+            double t = (i / 20.0) * Math.PI * 2;
+            // 心形函数
+            double x = 16 * Math.pow(Math.sin(t), 3);
+            double y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+            
+            // 缩放和定位
+            x = x * 0.03;
+            y = -y * 0.03;
+            
+            Location particleLoc = center.clone().add(x, y, 0);
+            center.getWorld().spawnParticle(Particle.HEART, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // 散布在玩家周围的心形粒子
+        for (int i = 0; i < count / 2; i++) {
+            double x = (random.nextDouble() - 0.5) * 2;
+            double y = random.nextDouble() * 2;
+            double z = (random.nextDouble() - 0.5) * 2;
+            
+            Location particleLoc = center.clone().add(x, y, z);
+            center.getWorld().spawnParticle(Particle.HEART, particleLoc, 1, 0, 0, 0, 0);
+        }
+    }
+    
+    /**
+     * 播放传送门粒子效果
+     */
+    private static void playPortalParticles(Player player, int count) {
+        Location center = player.getLocation().add(0, 1, 0);
+        
+        // 垂直螺旋
+        for (int i = 0; i < count / 2; i++) {
+            double angle = (i * (Math.PI * 2) / 20);
+            double radius = 1.2;
+            double height = (i % 20) * 0.2 - 1;
+            
+            double x = center.getX() + radius * Math.cos(angle);
+            double y = center.getY() + height;
+            double z = center.getZ() + radius * Math.sin(angle);
+            
+            Location particleLoc = new Location(center.getWorld(), x, y, z);
+            center.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 1, 0, 0, 0, 0);
+        }
+        
+        // 传送门形状
+        double portalHeight = 2.0;
+        double portalWidth = 1.0;
+        for (int i = 0; i < count / 2; i++) {
+            double angle = (i / (double)(count / 2)) * Math.PI * 2;
+            double x = Math.sin(angle) * portalWidth / 2;
+            double y = Math.cos(angle) * portalHeight / 2;
+            
+            Location particleLoc = center.clone().add(x, y, 0);
+            center.getWorld().spawnParticle(Particle.PORTAL, particleLoc, 1, 0, 0, 0, 0);
+        }
     }
 } 

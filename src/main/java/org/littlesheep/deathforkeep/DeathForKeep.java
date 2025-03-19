@@ -20,6 +20,7 @@ import org.littlesheep.deathforkeep.hooks.PlaceholderHook;
 import org.littlesheep.deathforkeep.listeners.DeathListener;
 import org.littlesheep.deathforkeep.listeners.JoinListener;
 import org.littlesheep.deathforkeep.listeners.ChatListener;
+import org.littlesheep.deathforkeep.service.ProtectionService;
 import org.littlesheep.deathforkeep.tasks.ReminderTask;
 import org.littlesheep.deathforkeep.utils.*;
 
@@ -27,6 +28,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 public final class DeathForKeep extends JavaPlugin {
 
@@ -39,8 +42,9 @@ public final class DeathForKeep extends JavaPlugin {
     private BossBarManager bossBarManager;
     private ShareRequestManager shareRequestManager;
     private ReminderTask reminderTask;
+    private ProtectionService protectionService;
 
-    private Map<UUID, PlayerData> playerDataMap = new HashMap<>();
+    private Map<UUID, PlayerData> playerDataMap = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -61,6 +65,9 @@ public final class DeathForKeep extends JavaPlugin {
         
         // 加载玩家数据
         playerDataMap = databaseManager.loadAllPlayerData();
+        
+        // 初始化保护服务
+        protectionService = new ProtectionService(this, databaseManager, playerDataMap);
         
         // 设置经济系统
         if (!setupEconomy()) {
@@ -221,73 +228,27 @@ public final class DeathForKeep extends JavaPlugin {
     }
     
     public boolean hasActiveProtection(UUID playerUUID) {
-        PlayerData data = playerDataMap.get(playerUUID);
-        if (data != null && data.isActive()) {
-            return true;
-        }
-        
-        // 检查是否有其他玩家与此玩家共享保护
-        for (PlayerData otherData : playerDataMap.values()) {
-            if (otherData.isActive() && playerUUID.equals(otherData.getSharedWith())) {
-                return true;
-            }
-        }
-        
-        return false;
+        return protectionService.hasActiveProtection(playerUUID);
     }
     
-    public void addProtection(UUID playerUUID, long durationInSeconds) {
-        long currentTime = System.currentTimeMillis() / 1000;
-        PlayerData data = playerDataMap.get(playerUUID);
-        
-        if (data == null) {
-            data = new PlayerData(playerUUID, 0, true, null);
-            playerDataMap.put(playerUUID, data);
-        }
-        
-        long expiryTime = data.getExpiryTime();
-        // 如果已经过期，从当前时间开始计算
-        if (expiryTime < currentTime) {
-            expiryTime = currentTime;
-        }
-        
-        // 添加新的持续时间
-        expiryTime += durationInSeconds;
-        data.setExpiryTime(expiryTime);
-        
-        // 保存到数据库
-        databaseManager.savePlayerData(playerUUID, expiryTime, data.isParticlesEnabled(), data.getSharedWith());
-        
-        // 如果玩家在线，显示粒子效果和BossBar
-        Player player = Bukkit.getPlayer(playerUUID);
-        if (player != null && player.isOnline()) {
-            // 显示粒子效果
-            if (getConfig().getBoolean("particles.on-protection-gained.enabled", true)) {
-                int duration = getConfig().getInt("particles.on-protection-gained.duration", 3);
-                org.littlesheep.deathforkeep.utils.ParticleUtils.playProtectionGainedEffect(this, player, duration);
-            }
-            
-            // 显示BossBar
-            bossBarManager.showProtectionGainedMessage(player, expiryTime);
-        }
+    public boolean addProtectionDays(UUID playerUUID, int days) {
+        return protectionService.addProtectionDays(playerUUID, days);
     }
     
-    public void removeProtection(UUID playerUUID) {
-        playerDataMap.remove(playerUUID);
-        databaseManager.removePlayerData(playerUUID);
+    public boolean removeProtection(UUID playerUUID) {
+        return protectionService.removeProtection(playerUUID);
+    }
+    
+    public long getProtectionTimeLeft(UUID playerUUID) {
+        return protectionService.getProtectionTimeLeft(playerUUID);
     }
     
     public void setParticlesEnabled(UUID playerUUID, boolean enabled) {
-        PlayerData data = playerDataMap.get(playerUUID);
-        if (data != null) {
-            data.setParticlesEnabled(enabled);
-            databaseManager.updateParticlesEnabled(playerUUID, enabled);
-        }
+        protectionService.setParticlesEnabled(playerUUID, enabled);
     }
     
-    public boolean areParticlesEnabled(UUID playerUUID) {
-        PlayerData data = playerDataMap.get(playerUUID);
-        return data != null && data.isParticlesEnabled();
+    public boolean isParticlesEnabled(UUID playerUUID) {
+        return protectionService.isParticlesEnabled(playerUUID);
     }
     
     public void shareProtection(UUID playerUUID, UUID targetUUID) {
@@ -414,5 +375,37 @@ public final class DeathForKeep extends JavaPlugin {
                 data.getSharedWith()
             );
         }
+    }
+
+    /**
+     * 添加保护（老方法，为兼容性保留）
+     * 
+     * @param playerUUID 玩家UUID
+     * @param durationInSeconds 保护持续时间（秒）
+     */
+    public void addProtection(UUID playerUUID, long durationInSeconds) {
+        int days = (int) (durationInSeconds / (24 * 60 * 60));
+        if (days < 1) days = 1; // 确保至少1天
+        addProtectionDays(playerUUID, days);
+    }
+    
+    /**
+     * 添加保护（老方法重载版本，为兼容性保留）
+     * 
+     * @param playerUUID 玩家UUID
+     * @param days 保护天数
+     */
+    public void addProtection(UUID playerUUID, int days) {
+        addProtectionDays(playerUUID, days);
+    }
+
+    /**
+     * 检查玩家粒子效果是否启用（老方法，为兼容性保留）
+     * 
+     * @param playerUUID 玩家UUID
+     * @return 是否启用
+     */
+    public boolean areParticlesEnabled(UUID playerUUID) {
+        return isParticlesEnabled(playerUUID);
     }
 }

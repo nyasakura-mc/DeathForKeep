@@ -9,11 +9,15 @@ import org.littlesheep.deathforkeep.DeathForKeep;
 import java.io.File;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class DatabaseManager {
     private final DeathForKeep plugin;
     private Connection connection;
+    private final Map<String, Connection> connectionPool = new ConcurrentHashMap<>();
+    private final int MAX_POOL_SIZE = 10;
     
     public DatabaseManager(DeathForKeep plugin) {
         this.plugin = plugin;
@@ -32,6 +36,12 @@ public class DatabaseManager {
             Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection(url);
             
+            // 初始化连接池
+            for (int i = 0; i < MAX_POOL_SIZE; i++) {
+                Connection conn = DriverManager.getConnection(url);
+                connectionPool.put("conn-" + i, conn);
+            }
+            
             try (Statement statement = connection.createStatement()) {
                 // 创建玩家数据表
                 statement.execute("CREATE TABLE IF NOT EXISTS player_data (" +
@@ -45,12 +55,37 @@ public class DatabaseManager {
         }
     }
     
+    /**
+     * 从连接池获取一个连接
+     */
+    private Connection getConnection() throws SQLException {
+        // 如果池中有连接，返回一个可用的连接
+        for (Map.Entry<String, Connection> entry : connectionPool.entrySet()) {
+            Connection conn = entry.getValue();
+            if (conn != null && !conn.isClosed()) {
+                return conn;
+            }
+        }
+        
+        // 如果没有可用连接，创建一个新的
+        String url = "jdbc:sqlite:" + new File(plugin.getDataFolder(), "database/deathkeep.db").getAbsolutePath();
+        return DriverManager.getConnection(url);
+    }
+    
     public void closeConnection() {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
-                plugin.getLogger().info("数据库连接已成功关闭");
             }
+            
+            // 关闭所有连接池中的连接
+            for (Connection conn : connectionPool.values()) {
+                if (conn != null && !conn.isClosed()) {
+                    conn.close();
+                }
+            }
+            connectionPool.clear();
+            plugin.getLogger().info("数据库连接已成功关闭");
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "关闭数据库连接时出错: " + e.getMessage(), e);
         } finally {
@@ -59,7 +94,8 @@ public class DatabaseManager {
     }
     
     public void savePlayerData(UUID uuid, long expiryTime, boolean particlesEnabled, UUID sharedWith) {
-        try (PreparedStatement ps = connection.prepareStatement(
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(
                 "INSERT OR REPLACE INTO player_data (uuid, expiry_time, particles_enabled, shared_with) VALUES (?, ?, ?, ?)")) {
             ps.setString(1, uuid.toString());
             ps.setLong(2, expiryTime);
@@ -69,6 +105,18 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "保存玩家数据时出错: " + uuid, e);
         }
+    }
+    
+    /**
+     * 异步保存玩家数据
+     */
+    public CompletableFuture<Void> savePlayerDataAsync(UUID uuid, long expiryTime, boolean particlesEnabled, UUID sharedWith) {
+        return CompletableFuture.runAsync(() -> {
+            savePlayerData(uuid, expiryTime, particlesEnabled, sharedWith);
+        }).exceptionally(ex -> {
+            plugin.getLogger().log(Level.SEVERE, "异步保存玩家数据时出错: " + uuid, ex);
+            return null;
+        });
     }
     
     public Map<UUID, PlayerData> loadAllPlayerData() {

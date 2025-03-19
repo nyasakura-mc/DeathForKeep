@@ -1,5 +1,5 @@
 # DeathForKeep 配置文件
-config-version: 3
+config-version: 4
 
 # 语言设置 (支持: zh-CN, en)
 language: zh-CN
@@ -7,12 +7,51 @@ language: zh-CN
 # 价格设置 (按天计算)
 prices:
   1d: 100
+  3d: 250
   7d: 500
+  15d: 1000
   30d: 2000
+
+# 保护等级设置
+# 可以配置多个等级，每个等级具有不同的价格和特性
+protection-levels:
+  basic:
+    price-multiplier: 1.0   # 基础价格乘数
+    description: "基础保护，保留所有物品"
+    permissions: "deathkeep.protection.basic"
+  advanced:
+    price-multiplier: 1.5   # 高级价格为基础价格的1.5倍
+    description: "高级保护，保留所有物品和经验"
+    permissions: "deathkeep.protection.advanced"
+    keep-exp: true
+    particle-effect: "FLAME"
+  premium:
+    price-multiplier: 2.0   # 高级价格为基础价格的2倍
+    description: "尊贵保护，保留所有物品、经验，并避免死亡惩罚"
+    permissions: "deathkeep.protection.premium"
+    keep-exp: true
+    particle-effect: "PORTAL"
+    no-death-penalty: true
 
 # 死亡设置
 broadcast-range: world  # 广播范围: world, server, none
 use-inventory-backup: true  # 开启物品备份恢复机制，解决与其他插件冲突导致的物品丢失
+auto-equip-armor: true      # 死亡重生后自动穿上装备
+
+# 优先保护物品设置
+# 如果保护失效，优先保护下列物品
+priority-protection:
+  enabled: false
+  item-types:
+    - DIAMOND_SWORD
+    - NETHERITE_PICKAXE
+    - ELYTRA
+  item-names:
+    - "§6传说武器"
+    - "§b稀有工具"
+  item-lore-contains:
+    - "§c不会消失的"
+    - "§e特殊物品"
 
 # 粒子效果设置
 particles:
@@ -41,6 +80,24 @@ particles:
     type: "FLAME"  # 粒子类型
     count: 150     # 粒子数量
 
+# 声音效果设置
+sounds:
+  protection-gained:
+    enabled: true
+    sound: "ENTITY_PLAYER_LEVELUP"
+    volume: 1.0
+    pitch: 1.2
+  protection-used:
+    enabled: true
+    sound: "ENTITY_TOTEM_USE"
+    volume: 0.8
+    pitch: 1.0
+  protection-expired:
+    enabled: true
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    volume: 0.7
+    pitch: 0.5
+
 # BossBar 设置
 bossbar:
   enabled: true
@@ -52,11 +109,25 @@ bossbar:
     enabled: true
     duration: 10  # BossBar显示秒数
     color: GREEN  # BossBar颜色: GREEN, BLUE, PINK, PURPLE, RED, WHITE, YELLOW
+  # 保护即将到期提醒
+  expiration-reminder:
+    enabled: true
+    intervals: [24, 12, 6, 1]  # 在保护到期前多少小时提醒
+    duration: 30  # BossBar显示秒数
+    color: YELLOW  # BossBar颜色
 
 # 共享设置
 share:
   fee-percentage: 10.0  # 共享手续费百分比 (0 表示无手续费)
   require-confirmation: true  # 是否需要接收方确认
+  max-share-count: 3   # 最多可共享给多少名玩家
+
+# 性能设置
+performance:
+  async-database: true  # 异步数据库操作
+  cache-timeout: 300    # 数据缓存超时时间(秒)
+  max-threads: 2        # 最大线程数
+  connection-pool-size: 10  # 连接池大小
 
 # bStats 统计设置
 bstats:
@@ -66,6 +137,7 @@ bstats:
 update-checker:
   enabled: true
   notify-admins: true
+  check-interval: 12   # 检查间隔(小时)
   
 # 数据库设置
 database:
@@ -77,3 +149,5 @@ database:
     username: root
     password: password
     ssl: false 
+    connection-pool: true  # 启用连接池
+    max-pool-size: 10      # 最大连接池大小 
