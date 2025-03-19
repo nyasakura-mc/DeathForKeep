@@ -1,7 +1,7 @@
 # DeathForKeep 配置文件
 config-version: 4
 
-# 语言设置 (支持: zh-CN, en)
+# 语言设置 (支持: zh-CN, en-US)
 language: zh-CN
 
 # 价格设置 (按天计算)

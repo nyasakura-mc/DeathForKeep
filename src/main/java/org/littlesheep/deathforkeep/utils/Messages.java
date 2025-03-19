@@ -31,7 +31,7 @@ public class Messages {
     
     public void loadLanguage() {
         messageCache.clear();
-        String language = plugin.getConfig().getString("language", "en");
+        String language = plugin.getConfig().getString("language", "zh-CN");
         
         // 确保语言文件夹存在
         File langFolder = new File(plugin.getDataFolder(), "lang");
@@ -40,21 +40,21 @@ public class Messages {
         }
         
         // 保存默认语言文件
-        saveDefaultLanguageFile("en.yml");
         saveDefaultLanguageFile("zh-CN.yml");
+        saveDefaultLanguageFile("en-US.yml");
         
         // 加载指定的语言文件
         File langFile = new File(langFolder, language + ".yml");
         if (!langFile.exists()) {
-            plugin.getLogger().warning("找不到语言文件: " + language + ".yml，使用默认英文");
-            langFile = new File(langFolder, "en.yml");
+            plugin.getLogger().warning("找不到语言文件: " + language + ".yml，使用默认中文");
+            langFile = new File(langFolder, "zh-CN.yml");
         }
         
         langConfig = YamlConfiguration.loadConfiguration(langFile);
         
         // 加载默认语言文件作为备用
         InputStreamReader defaultLangStream = new InputStreamReader(
-                plugin.getResource("lang/en.yml"), StandardCharsets.UTF_8);
+                plugin.getResource("lang/zh-CN.yml"), StandardCharsets.UTF_8);
         if (defaultLangStream != null) {
             YamlConfiguration defaultLang = YamlConfiguration.loadConfiguration(defaultLangStream);
             langConfig.setDefaults(defaultLang);

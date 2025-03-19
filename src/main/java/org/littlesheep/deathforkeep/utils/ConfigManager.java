@@ -65,7 +65,7 @@ public class ConfigManager {
         
         // 保存默认语言文件
         saveDefaultLanguageFile("zh-CN.yml");
-        saveDefaultLanguageFile("en.yml");
+        saveDefaultLanguageFile("en-US.yml");
         
         // 检查语言文件版本
         String language = plugin.getConfig().getString("language", "zh-CN");
