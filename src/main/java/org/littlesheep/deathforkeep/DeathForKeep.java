@@ -25,11 +25,9 @@ import org.littlesheep.deathforkeep.tasks.ReminderTask;
 import org.littlesheep.deathforkeep.utils.*;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CompletableFuture;
 
 public final class DeathForKeep extends JavaPlugin {
 
